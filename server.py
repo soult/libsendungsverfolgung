@@ -20,7 +20,7 @@ def webgls_json_weight():
     response.content_type = "application/json"
     data = {}
     try:
-        parcel = lsv.GLS.get_parcel(str(request.query.barcode))
+        parcel = lsv.GLS.get_parcel(str(request.query.barcode).strip())
     except:
         data["status"] = "error"
         data["barcode"] = str(request.query.barcode)
