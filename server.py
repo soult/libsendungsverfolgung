@@ -27,7 +27,7 @@ def webgls_json_weight():
     else:
         data["status"] = "success"
         data["barcode"] = parcel.tracking_number
-        data["weight"] = parcel.weight
+        data["weight"] = ("%0.2f" % parcel.weight).replace(".", ",")
         data["date"] = sorted(parcel.events)[0].when.strftime("%d.%m.%Y")
     print(data)
     return json.dumps(data)

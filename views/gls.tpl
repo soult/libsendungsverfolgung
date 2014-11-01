@@ -14,11 +14,11 @@ function gls_json_weight(data) {
             }
         });
         if(!duplicate) {
-            $("#weights").append("<tr><td>abc</td><td></td><td></td></tr>")
+            $("#weights").append("<tr><td>abc</td><td></td><td></td><td></td><td></td></tr>")
             var row = $("#weights tr:last");
             row.children("td:nth-child(1)").text(data.date);
             row.children("td:nth-child(2)").text(data.barcode);
-            row.children("td:nth-child(3)").text(data.weight);
+            row.children("td:nth-child(5)").text(data.weight);
         } else {
             $("#errors").append("<li>Paket-Nr. " + data.barcode + " bereits vorhanden</li>");
         }
@@ -76,6 +76,8 @@ th, td {
                 <tr>
                     <th>Datum</th>
                     <th>Barcode</th>
+                    <th></th>
+                    <th></th>
                     <th>Gewicht (in kg)</th>
                 </tr>
             </table>
