@@ -19,11 +19,12 @@ def webgls():
 def webgls_json_weight():
     response.content_type = "application/json"
     data = {}
+    barcode = str(request.query.barcode).strip()
     try:
-        parcel = lsv.GLS.get_parcel(str(request.query.barcode).strip())
+        parcel = lsv.GLS.get_parcel(barcode)
     except:
         data["status"] = "error"
-        data["barcode"] = str(request.query.barcode)
+        data["barcode"] = barcode
     else:
         data["status"] = "success"
         data["barcode"] = parcel.tracking_number
