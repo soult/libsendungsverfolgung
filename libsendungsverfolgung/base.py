@@ -26,6 +26,12 @@ class ParcelEvent(object):
     def __eq__(self, other):
         return self.when == other.when
 
+    def __str__(self):
+        if hasattr(self, "DESCRIPTION"):
+            return "%s: %s" % (self.when, self.DESCRIPTION)
+        else:
+            return str(self.when)
+
 class DataReceivedEvent(ParcelEvent):
     """
     Data received event
@@ -34,7 +40,8 @@ class DataReceivedEvent(ParcelEvent):
     courier. This usually only means that data for the parcel has been
     received, but the parcel has not reached the courier yet.
     """
-    pass
+
+    DESCRIPTION = "received electronic shipping information"
 
 class LocationEvent(ParcelEvent):
     """
@@ -50,11 +57,18 @@ class LocationEvent(ParcelEvent):
         super(LocationEvent, self).__init__(*args, **kwargs)
         self.location = location
 
+    def __str__(self):
+        if hasattr(self, "DESCRIPTION"):
+            return "%s %s: %s" % (self.when, self.location, self.DESCRIPTION)
+        else:
+            return "%s %s" % (self.when, self.location)
+
 class SortEvent(LocationEvent):
     """
     Parcel sort event
     """
-    pass
+
+    DESCRIPTION = "sort"
 
 class PickupEvent(LocationEvent):
     """
@@ -62,7 +76,8 @@ class PickupEvent(LocationEvent):
 
     Parcel has been picked up by the courier at the sender's location.
     """
-    pass
+
+    DESCRIPTION = "pickup at sender's location"
 
 class InDeliveryEvent(LocationEvent):
     """
@@ -70,7 +85,8 @@ class InDeliveryEvent(LocationEvent):
 
     The parcel is out for delivery.
     """
-    pass
+
+    DESCRIPTION = "out for delivery"
 
 class DeliveryEvent(LocationEvent):
     """
@@ -79,9 +95,35 @@ class DeliveryEvent(LocationEvent):
     The parcel has successfully been delivered.
     """
 
+    DESCRIPTION = "delivered"
+
     def __init__(self, recipient, *args, **kwargs):
         super(DeliveryEvent, self).__init__(*args, **kwargs)
         self.recipient = recipient
+
+class DeliveryNeighbourEvent(DeliveryEvent):
+    """
+    Parcel neighbour delivery event
+
+    The parcel has been delivered to a neighbour.
+    """
+    DESCRIPTION = "delivered to neighbour"
+
+class FailedDeliveryEvent(LocationEvent):
+    """
+    Parcel delivery failed event
+
+    The parcel could not be delivered.
+    """
+    DESCRIPTION = "delivery failed"
+
+class RecipientUnavailableEvent(FailedDeliveryEvent):
+    """
+    Recipient unavailable event
+
+    The parcel could not be delivered because the recipient was not available.
+    """
+    DESCRIPTION = "delivery failed because recipient unavailable"
 
 class RecipientNotificationEvent(LocationEvent):
     """
@@ -89,6 +131,8 @@ class RecipientNotificationEvent(LocationEvent):
 
     The recipient has been notified.
     """
+
+    DESCRIPTION = "recipient notified"
 
     def __init__(self, notification, *args, **kwargs):
         super(RecipientNotificationEvent, self).__init__(*args, **kwargs)
@@ -100,3 +144,5 @@ class StoreDropoffEvent(LocationEvent):
 
     The parcel has been dropped of at a store ("Paketshop").
     """
+
+    DESCRIPTION = "dropped of at store"

@@ -49,10 +49,16 @@ class GLS(object):
     @classmethod
     def parse_event(cls, event):
         when = datetime.datetime.strptime(event["date"] + event["time"], "%Y-%m-%d%H:%M:%S")
-        location = event["address"]
+        location = event["address"]["city"] + ", " + event["address"]["countryCode"]
 
         if event["evtDscr"] == "Delivered":
             event = base.DeliveryEvent(
+                when=when,
+                location=location,
+                recipient=None
+            )
+        elif event["evtDscr"] == "Delivered Handed over to neighbour":
+            event = base.DeliveryNeighbourEvent(
                 when=when,
                 location=location,
                 recipient=None
@@ -67,7 +73,24 @@ class GLS(object):
                 when=when,
                 location=location
             )
+        elif event["evtDscr"] == "Not delivered because consignee not in":
+            event = base.RecipientUnavailableEvent(
+                when=when,
+                location=location
+            )
+        elif event["evtDscr"] == "Consignee contacted Notification card":
+            event = base.RecipientNotificationEvent(
+                notification="card",
+                when=when,
+                location=location
+            )
+        elif event["evtDscr"] == "Delivered to a GLS Parcel Shop":
+            event = base.StoreDropoffEvent(
+                when=when,
+                location=location
+            )
         else:
+            print(event)
             event = base.ParcelEvent(
                 when=when
             )
