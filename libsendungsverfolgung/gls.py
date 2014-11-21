@@ -64,6 +64,11 @@ class GLS(object):
                 location=location,
                 recipient=None
             )
+        elif event["evtDscr"] == "Delivered without proof of delivery":
+            event = base.DeliveryDropOffEvent(
+                when=when,
+                location=location,
+            )
         elif event["evtDscr"] == "Out for delivery on GLS vehicle":
             event = base.InDeliveryEvent(
                 when=when,

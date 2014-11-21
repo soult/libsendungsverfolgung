@@ -121,6 +121,16 @@ class DeliveryEvent(LocationEvent):
         super(DeliveryEvent, self).__init__(*args, **kwargs)
         self.recipient = recipient
 
+class DeliveryDropOffEvent(LocationEvent):
+    """
+    Parcel drop off delivery event
+
+    The parcel has been dropped of by the courier without getting a signature,
+    usually because it was requested by the client ("Abstellgenehmigung").
+    """
+
+    DESCRIPTION = "delivered without signature"
+
 class DeliveryNeighbourEvent(DeliveryEvent):
     """
     Parcel neighbour delivery event
