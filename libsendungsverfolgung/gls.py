@@ -29,8 +29,8 @@ class GLS(object):
             raise ValueError("Unknown tracking number")
 
         data = r.json()
-#        import json
-#        print(json.dumps(data, indent=4, sort_keys=True))
+        import json
+        print(json.dumps(data, indent=4, sort_keys=True))
 
         weight = None
         product = None
@@ -88,6 +88,14 @@ class GLS(object):
             event = base.StoreDropoffEvent(
                 when=when,
                 location=location
+            )
+        elif event["evtDscr"] == "Information transmitted, no shipment available now":
+            event = base.DataReceivedEvent(
+                when=when
+            )
+        elif event["evtDscr"] == "Data erased from GLS system":
+            event = base.CancelledEvent(
+                when=when
             )
         else:
             print(event)

@@ -43,10 +43,19 @@ class DataReceivedEvent(ParcelEvent):
 
     DESCRIPTION = "received electronic shipping information"
 
+class CancelledEvent(ParcelEvent):
+    """
+    Parcel cancelled event
+
+    The electronic shipping information which has previously been avisoed has
+    been cancelled. The parcel will not be sent.
+    """
+
+    DESCRIPTION = "cancelled"
+
 class LocationEvent(ParcelEvent):
     """
     Location-based event
-
 
     Event that involves the physical parcel being at a specific location. This
     event is not returned directly, instead various subclasses that provide
