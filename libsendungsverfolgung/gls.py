@@ -14,6 +14,7 @@ class GLS(object):
 
     @classmethod
     def get_parcel(cls, tracking_number):
+        tracking_number = str(tracking_number)
         if len(tracking_number) == 11:
             tracking_number += str(cls.check_digit(tracking_number))
         params = {
