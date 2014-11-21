@@ -68,7 +68,7 @@ class GLS(object):
                 when=when,
                 location=location
             )
-        elif event["evtDscr"] in ("Inbound to GLS location", "Inbound to GLS location sorted as Business-Small Parcel"):
+        elif event["evtDscr"] in ("Inbound to GLS location", "Inbound to GLS location sorted as Business-Small Parcel", "Outbound from GLS location", "Inbound to GLS location manually sorted"):
             event = base.SortEvent(
                 when=when,
                 location=location
@@ -92,6 +92,31 @@ class GLS(object):
         elif event["evtDscr"] == "Information transmitted, no shipment available now":
             event = base.DataReceivedEvent(
                 when=when
+            )
+        elif event["evtDscr"] == "Stored" or event["evtDscr"].startswith("Retained at GLS location"):
+            event = base.StoredEvent(
+                when=when,
+                location=location
+            )
+        elif event["evtDscr"] == "Not delivered due to a wrong address":
+            event = base.WrongAddressEvent(
+                when=when,
+                location=location
+            )
+        elif event["evtDscr"] == "Not delivered due to declined acceptance":
+            event = base.DeliveryRefusedEvent(
+                when=when,
+                location=location
+            )
+        elif event["evtDscr"] == "Not delivered Parcel Shop storage term is exceeded":
+            event = base.StoreNotPickedUpEvent(
+                when=when,
+                location=location
+            )
+        elif event["evtDscr"] == "Returned to consignor":
+            event = base.ReturnEvent(
+                when=when,
+                location=location
             )
         elif event["evtDscr"] == "Data erased from GLS system":
             event = base.CancelledEvent(

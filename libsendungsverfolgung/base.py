@@ -79,6 +79,17 @@ class SortEvent(LocationEvent):
 
     DESCRIPTION = "sort"
 
+class StoredEvent(LocationEvent):
+    """
+    Parcel stored event
+
+    Parcel has been stored. This can be due to errors (e.g. address not found)
+    but it can also just be a routine step (e.g. a parcel being stored until
+    the next truck to another depot is ready.
+    """
+
+    DESCRIPTION = "stored"
+
 class PickupEvent(LocationEvent):
     """
     Parcel pickup event
@@ -134,6 +145,24 @@ class RecipientUnavailableEvent(FailedDeliveryEvent):
     """
     DESCRIPTION = "delivery failed because recipient unavailable"
 
+class WrongAddressEvent(FailedDeliveryEvent):
+    """
+    Wrong address event
+
+    The parcel could not be delivered due to a wrong address.
+    """
+
+    DESCRIPTION = "delivery failed due to wrong address"
+
+class DeliveryRefusedEvent(FailedDeliveryEvent):
+    """
+    Delivery refused event
+
+    The parcel could not be delivered because the recipient refused to accept it
+    """
+
+    DESCRIPTION = "delivery refused by recipient"
+
 class RecipientNotificationEvent(LocationEvent):
     """
     Recipient notification event
@@ -155,3 +184,21 @@ class StoreDropoffEvent(LocationEvent):
     """
 
     DESCRIPTION = "dropped of at store"
+
+class StoreNotPickedUpEvent(FailedDeliveryEvent):
+    """
+    Store not picked up event
+
+    The parcel was dropped off at a store but never picked up by the recipient
+    """
+
+    DESCRIPTION = "storage time exceeded"
+
+class ReturnEvent(LocationEvent):
+    """
+    Parcel return event
+
+    The parcel will be returned to the sender
+    """
+
+    DESCRIPTION = "returning"
