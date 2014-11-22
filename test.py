@@ -13,3 +13,4 @@ if __name__ == "__main__":
         print(ev)
 #        print("    - %s" % ev)
     #print(json.dumps(parcel, indent=4, sort_keys=True))
+    print(parcel.references)

@@ -1,11 +1,12 @@
 class Parcel(object):
 
-    def __init__(self, courier, tracking_number, events=None, product=None, weight=None):
+    def __init__(self, courier, tracking_number, events=None, product=None, weight=None, references=None):
         self.courier = courier
         self.tracking_number = tracking_number
         self.product = product
         self.weight = weight
         self.events = events or []
+        self.references = references or {}
 
     def __str__(self):
         return "%s %s: %s" % (self.courier.SHORTNAME, self.product or "parcel", self.tracking_number)

@@ -43,9 +43,19 @@ class GLS(object):
             elif info["type"] == "PRODUCT":
                 product = info["value"]
 
+        references = {}
+        for info in data["tuStatus"][0]["references"]:
+            if info["type"] == "GLSREF":
+                references["customer_id"] = info["value"]
+            elif info["type"] == "CUSTREF":
+                if info["name"] == "Customer's own reference number":
+                    references["shipment"] = info["value"]
+                elif info["name"] == "Customers own reference number - per TU":
+                    references["parcel"] = info["value"]
+
         events = reversed(list(map(cls.parse_event, data["tuStatus"][0]["history"])))
 
-        return base.Parcel(cls, tracking_number, events, product, weight)
+        return base.Parcel(cls, tracking_number, events, product, weight, references)
 
     @classmethod
     def parse_event(cls, event):
