@@ -1,6 +1,7 @@
 import datetime
 import itertools
 import operator
+import re
 import requests
 import time
 
@@ -14,9 +15,6 @@ class GLS(object):
 
     @classmethod
     def get_parcel(cls, tracking_number):
-        tracking_number = str(tracking_number)
-        if len(tracking_number) == 11:
-            tracking_number += str(cls.check_digit(tracking_number))
         params = {
             "caller": "witt002",
             "match": tracking_number,
@@ -53,6 +51,8 @@ class GLS(object):
 
         events = reversed(list(map(cls.parse_event, data["tuStatus"][0]["history"])))
 
+        tracking_number = data["tuStatus"][0]["tuNo"]
+        tracking_number += str(cls.check_digit(tracking_number))
         return base.Parcel(cls, tracking_number, events, product, weight, references)
 
     @classmethod
@@ -146,6 +146,8 @@ class GLS(object):
 
     @classmethod
     def autodetect(cls, tracking_number, country, postcode):
+        if re.match("[A-Z0-9]{8}", tracking_number):
+            return cls.get_parcel(tracking_number)
         if len(tracking_number) == 11:
             tracking_number += str(cls.check_digit(tracking_number))
         if len(tracking_number) == 12:

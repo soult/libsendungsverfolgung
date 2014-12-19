@@ -11,6 +11,6 @@ if __name__ == "__main__":
     print(parcel.weight)
     for ev in parcel.events:
         print(ev)
-#        print("    - %s" % ev)
-    #print(json.dumps(parcel, indent=4, sort_keys=True))
-    print(parcel.references)
+        if hasattr(ev, "location"):
+            print(json.dumps(ev.location, indent=4, sort_keys=True))
+#    print(parcel.references)
