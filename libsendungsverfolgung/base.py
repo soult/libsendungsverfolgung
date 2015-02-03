@@ -91,6 +91,16 @@ class StoredEvent(LocationEvent):
 
     DESCRIPTION = "stored"
 
+class PostedEvent(LocationEvent):
+    """
+    Parcel posted event
+
+    Parcel has been posted at the Parcel shop ("Paketshop") or postal office by
+    the sender.
+    """
+
+    DESCRIPTION = "posted by sender"
+
 class PickupEvent(LocationEvent):
     """
     Parcel pickup event
