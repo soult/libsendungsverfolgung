@@ -6,7 +6,7 @@ import sys
 import libsendungsverfolgung
 
 if __name__ == "__main__":
-    parcel = libsendungsverfolgung.gls.GLS.autodetect(sys.argv[1], None, None)
+    parcel = libsendungsverfolgung.dpd.DPD.autodetect(sys.argv[1], None, None)
     print(parcel)
     print(parcel.weight)
     for ev in parcel.events:
