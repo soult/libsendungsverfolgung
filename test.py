@@ -3,14 +3,13 @@
 import json
 import sys
 
-import libsendungsverfolgung
+import libsendungsverfolgung as lsv
 
-if __name__ == "__main__":
-    parcel = libsendungsverfolgung.dpd.DPD.autodetect(sys.argv[1], None, None)
-    print(parcel)
-    print(parcel.weight)
-    for ev in parcel.events:
-        print(ev)
-        if hasattr(ev, "location"):
-            print(json.dumps(ev.location, indent=4, sort_keys=True))
-#    print(parcel.references)
+if len(sys.argv) > 2:
+    parcel = lsv.DPD.Parcel(sys.argv[1])
+else:
+    parcel = lsv.GLS.Parcel(sys.argv[1])
+
+print(parcel)
+for ev in parcel.events:
+    print(ev)

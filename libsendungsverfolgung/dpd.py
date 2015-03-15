@@ -4,15 +4,17 @@ import requests
 import time
 
 from . import base
+from .events import *
 
-class DPD(object):
+class Parcel(base.Parcel):
 
-    SLUG = "dpd"
-    SHORTNAME = "DPD"
-    NAME = "Dynamic Parcel Distribution"
+    def __init__(self, tracking_number, *args, **kwargs):
+        tracking_number = str(tracking_number)
+        if len(tracking_number) != 14:
+            raise ValueError("Invalid tracking number")
+        self._get_data(tracking_number)
 
-    @classmethod
-    def get_parcel(cls, tracking_number):
+    def _get_data(self, tracking_number):
         params = {
             "parcelNr": str(tracking_number),
             "locale": "en",
@@ -22,61 +24,61 @@ class DPD(object):
         }
         r = requests.get("https://tracking.dpd.de/cgi-bin/simpleTracking.cgi", params=params)
 
-        data = json.loads(r.text[7:-1])
+        self._data = json.loads(r.text[7:-1])
 
-        if "ErrorJSON" in data:
-            if data["ErrorJSON"]["code"] == -8:
+        if "ErrorJSON" in self._data:
+            if self._data["ErrorJSON"]["code"] == -8:
                 raise ValueError("Unknown tracking number")
             raise Exception("Unknown error")
 
-        tracking_number = data["TrackingStatusJSON"]["shipmentInfo"]["parcelNumber"]
-        product = data["TrackingStatusJSON"]["shipmentInfo"]["product"]
+    @property
+    def tracking_number(self):
+        return self._data["TrackingStatusJSON"]["shipmentInfo"]["parcelNumber"]
 
-        events = list(map(cls.parse_event, data["TrackingStatusJSON"]["statusInfos"]))
+    @property
+    def product(self):
+        return self._data["TrackingStatusJSON"]["shipmentInfo"]["product"]
 
-        return base.Parcel(cls, tracking_number, events, product, None, None)
+    @property
+    def events(self):
+        events = []
 
-    @classmethod
-    def parse_event(cls, event):
-        when = datetime.datetime.strptime(event["date"] + event["time"], "%d-%m-%Y%H:%M ")
-        location = event["city"]
+        for event in self._data["TrackingStatusJSON"]["statusInfos"]:
+            when = datetime.datetime.strptime(event["date"] + event["time"], "%d-%m-%Y%H:%M ")
+            location = event["city"]
 
-        label = event["contents"][0]["label"]
+            label = event["contents"][0]["label"]
 
-        if label == "Order information has been transmitted to DPD.":
-            event = base.DataReceivedEvent(
-                when=when
-            )
-        elif label in("In transit.", "At parcel delivery centre."):
-            event = base.SortEvent(
-                when=when,
-                location=location
-            )
-        elif label == "Out for delivery.":
-            event = base.InDeliveryEvent(
-                when=when,
-                location=location
-            )
-        elif label == "Unfortunately we have not been able to deliver your parcel.":
-            event = base.FailedDeliveryEvent(
-                when=when,
-                location=location
-            )
-        elif label == "Delivered.":
-            event = base.DeliveryEvent(
-                when=when,
-                location=location,
-                recipient=None
-            )
-        else:
-            print(event)
-            event = base.ParcelEvent(
-                when=when
-            )
+            if label == "Order information has been transmitted to DPD.":
+                pe = DataReceivedEvent(
+                    when=when
+                )
+            elif label in("In transit.", "At parcel delivery centre."):
+                pe = SortEvent(
+                    when=when,
+                    location=location
+                )
+            elif label == "Out for delivery.":
+                pe = InDeliveryEvent(
+                    when=when,
+                    location=location
+                )
+            elif label == "Unfortunately we have not been able to deliver your parcel.":
+                pe = FailedDeliveryEvent(
+                    when=when,
+                    location=location
+                )
+            elif label == "Delivered.":
+                pe = DeliveryEvent(
+                    when=when,
+                    location=location,
+                    recipient=None
+                )
+            else:
+                pe = ParcelEvent(
+                    when=when
+                )
 
-        return event
+            events.append(pe)
 
-    @classmethod
-    def autodetect(cls, tracking_number, country, postcode):
-        if len(tracking_number) == 14:
-            return cls.get_parcel(tracking_number)
+        return events

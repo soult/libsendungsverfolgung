@@ -1,4 +1,5 @@
 import datetime
+import decimal
 import itertools
 import operator
 import re
@@ -6,15 +7,28 @@ import requests
 import time
 
 from . import base
+from .events import *
 
-class GLS(object):
+class Location(base.Location):
 
-    SLUG = "gls"
-    SHORTNAME = "GLS"
-    NAME = "General Logistics Systems"
+    def __init__(self, data):
+        return super(Location, self).__init__(city=data["city"], country_code=data["countryCode"])
 
-    @classmethod
-    def get_parcel(cls, tracking_number):
+class Parcel(base.Parcel):
+
+    def __init__(self, tracking_number, *args, **kwargs):
+        tracking_number = str(tracking_number)
+        match = re.match("^([0-9]{11})([0-9])$", tracking_number)
+        if match:
+            if self.check_digit(match.group(0)) != match.group(1):
+                raise ValueError("Invalid check digit")
+        elif not (re.match("^[0-9]{11}$", tracking_number) or re.match("^[A-Z0-9]{8}$", tracking_number)):
+            raise ValueError("Invalid tracking number")
+
+        super(Parcel, self).__init__(*args, **kwargs)
+        self._get_data(tracking_number)
+
+    def _get_data(self, tracking_number):
         params = {
             "caller": "witt002",
             "match": tracking_number,
@@ -27,20 +41,34 @@ class GLS(object):
         if r.status_code == 404:
             raise ValueError("Unknown tracking number")
 
-        data = r.json()
+        self._data = r.json()
+        if not "tuStatus" in self._data:
+            raise ValueError("Unknown tracking number")
 
-        weight = None
-        product = None
-        infos = data["tuStatus"][0]["infos"]
-        for info in data["tuStatus"][0]["infos"]:
-            if info["type"] == "WEIGHT":
-                assert info["value"][-3:] == " kg"
-                weight = float(info["value"][:-3])
-            elif info["type"] == "PRODUCT":
-                product = info["value"]
+    def _get_info(self, key):
+        for info in self._data["tuStatus"][0]["infos"]:
+            if info["type"] == key:
+                return info["value"]
+    @property
+    def weight(self):
+        weight = self._get_info("WEIGHT")
+        if weight:
+            assert weight[-3:] == " kg"
+            return decimal.Decimal(weight[:-3])
 
+    @property
+    def tracking_number(self):
+        tn = self._data["tuStatus"][0]["tuNo"]
+        return tn + str(self.check_digit(tn))
+
+    @property
+    def product(self):
+        return self._get_info("PRODUCT")
+
+    @property
+    def references(self):
         references = {}
-        for info in data["tuStatus"][0]["references"]:
+        for info in self._data["tuStatus"][0]["references"]:
             if info["type"] == "GLSREF":
                 references["customer_id"] = info["value"]
             elif info["type"] == "CUSTREF":
@@ -49,115 +77,113 @@ class GLS(object):
                 elif info["name"] == "Customers own reference number - per TU":
                     references["parcel"] = info["value"]
 
-        events = reversed(list(map(cls.parse_event, data["tuStatus"][0]["history"])))
+    @property
+    def events(self):
+        events = []
 
-        tracking_number = data["tuStatus"][0]["tuNo"]
-        tracking_number += str(cls.check_digit(tracking_number))
-        return base.Parcel(cls, tracking_number, events, product, weight, references)
+        for event in self._data["tuStatus"][0]["history"]:
+            descr = event["evtDscr"]
+            when = datetime.datetime.strptime(event["date"] + event["time"], "%Y-%m-%d%H:%M:%S")
+            location = Location(event["address"])
 
-    @classmethod
-    def parse_event(cls, event):
-        when = datetime.datetime.strptime(event["date"] + event["time"], "%Y-%m-%d%H:%M:%S")
-        location = event["address"]["city"] + ", " + event["address"]["countryCode"]
+            if descr == "Delivered":
+                pe = DeliveryEvent(
+                    when=when,
+                    location=location,
+                    recipient=None
+                )
+            elif descr == "Delivered Handed over to neighbour":
+                pe = DeliveryNeighbourEvent(
+                    when=when,
+                    location=location,
+                    recipient=None
+                )
+            elif descr == "Delivered without proof of delivery":
+                pe = DeliveryDropOffEvent(
+                    when=when,
+                    location=location,
+                )
+            elif descr == "Out for delivery on GLS vehicle":
+                pe = InDeliveryEvent(
+                    when=when,
+                    location=location
+                )
+            # GLS rarely does outbound sort scans/events. This makes the
+            # tracking data very confusing because one would expect an outbound
+            # scan for each inbound scan. Additionally, GLS often has duplicate
+            # inbound scans. To avoid confusion, all inbound sort events are
+            # simply parsed as "regular" sort events.
+            elif descr in (
+                "Inbound to GLS location",
+                "Inbound to GLS location sorted as Business-Small Parcel",
+                "Inbound to GLS location manually sorted",
+            ):
+                pe = SortEvent(
+                    when=when,
+                    location=location
+                )
+            elif descr == "Outbound from GLS location":
+                pe = OutboundSortEvent(
+                    when=when,
+                    location=location
+                )
+            elif descr == "Not delivered because consignee not in":
+                pe = RecipientUnavailableEvent(
+                    when=when,
+                    location=location
+                )
+            elif descr == "Consignee contacted Notification card":
+                pe =  RecipientNotificationEvent(
+                    notification="card",
+                    when=when,
+                    location=location
+                )
+            elif descr == "Delivered to a GLS Parcel Shop":
+                pe = StoreDropoffEvent(
+                    when=when,
+                    location=location
+                )
+            elif descr == "Information transmitted, no shipment available now":
+                pe = DataReceivedEvent(
+                    when=when
+                )
+            elif descr == "Stored" or descr.startswith("Retained at GLS location"):
+                pe = StoredEvent(
+                    when=when,
+                    location=location
+                )
+            elif descr == "Not delivered due to a wrong address":
+                pe = WrongAddressEvent(
+                    when=when,
+                    location=location
+                )
+            elif descr == "Not delivered due to declined acceptance":
+                pe = DeliveryRefusedEvent(
+                    when=when,
+                    location=location
+                )
+            elif descr == "Not delivered Parcel Shop storage term is exceeded":
+                pe = StoreNotPickedUpEvent(
+                    when=when,
+                    location=location
+                )
+            elif descr == "Returned to consignor":
+                pe = ReturnEvent(
+                    when=when,
+                    location=location
+                )
+            elif descr == "Data erased from GLS system":
+                pe = CancelledEvent(
+                    when=when
+                )
+            else:
+                pe = ParcelEvent(
+                    when=when
+                )
 
-        if event["evtDscr"] == "Delivered":
-            event = base.DeliveryEvent(
-                when=when,
-                location=location,
-                recipient=None
-            )
-        elif event["evtDscr"] == "Delivered Handed over to neighbour":
-            event = base.DeliveryNeighbourEvent(
-                when=when,
-                location=location,
-                recipient=None
-            )
-        elif event["evtDscr"] == "Delivered without proof of delivery":
-            event = base.DeliveryDropOffEvent(
-                when=when,
-                location=location,
-            )
-        elif event["evtDscr"] == "Out for delivery on GLS vehicle":
-            event = base.InDeliveryEvent(
-                when=when,
-                location=location
-            )
-        elif event["evtDscr"] in ("Inbound to GLS location", "Inbound to GLS location sorted as Business-Small Parcel", "Outbound from GLS location", "Inbound to GLS location manually sorted"):
-            event = base.SortEvent(
-                when=when,
-                location=location
-            )
-        elif event["evtDscr"] == "Not delivered because consignee not in":
-            event = base.RecipientUnavailableEvent(
-                when=when,
-                location=location
-            )
-        elif event["evtDscr"] == "Consignee contacted Notification card":
-            event = base.RecipientNotificationEvent(
-                notification="card",
-                when=when,
-                location=location
-            )
-        elif event["evtDscr"] == "Delivered to a GLS Parcel Shop":
-            event = base.StoreDropoffEvent(
-                when=when,
-                location=location
-            )
-        elif event["evtDscr"] == "Information transmitted, no shipment available now":
-            event = base.DataReceivedEvent(
-                when=when
-            )
-        elif event["evtDscr"] == "Stored" or event["evtDscr"].startswith("Retained at GLS location"):
-            event = base.StoredEvent(
-                when=when,
-                location=location
-            )
-        elif event["evtDscr"] == "Not delivered due to a wrong address":
-            event = base.WrongAddressEvent(
-                when=when,
-                location=location
-            )
-        elif event["evtDscr"] == "Not delivered due to declined acceptance":
-            event = base.DeliveryRefusedEvent(
-                when=when,
-                location=location
-            )
-        elif event["evtDscr"] == "Not delivered Parcel Shop storage term is exceeded":
-            event = base.StoreNotPickedUpEvent(
-                when=when,
-                location=location
-            )
-        elif event["evtDscr"] == "Returned to consignor":
-            event = base.ReturnEvent(
-                when=when,
-                location=location
-            )
-        elif event["evtDscr"] == "Data erased from GLS system":
-            event = base.CancelledEvent(
-                when=when
-            )
-        else:
-            print(event)
-            event = base.ParcelEvent(
-                when=when
-            )
+            events.append(pe)
 
-        return event
-
-    @classmethod
-    def autodetect(cls, tracking_number, country, postcode):
-        if re.match("[A-Z0-9]{8}", tracking_number):
-            return cls.get_parcel(tracking_number)
-        if len(tracking_number) == 11:
-            tracking_number += str(cls.check_digit(tracking_number))
-        if len(tracking_number) == 12:
-            try:
-                check_digit = cls.check_digit(tracking_number[:11])
-                if check_digit == int(tracking_number[11]):
-                    return cls.get_parcel(tracking_number)
-            except ValueError:
-                pass
-        return None
+        return list(reversed(events))
 
     @staticmethod
     def check_digit(tracking_number):

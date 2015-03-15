@@ -1,225 +1,74 @@
-class Parcel(object):
+import abc
+import collections
+import csv
+import os.path
 
-    def __init__(self, courier, tracking_number, events=None, product=None, weight=None, references=None):
-        self.courier = courier
-        self.tracking_number = tracking_number
-        self.product = product
-        self.weight = weight
-        self.events = events or []
-        self.references = references or {}
+def load_countries():
+    filename = os.path.join(os.path.dirname(__file__), "country-codes.csv")
+    if not os.path.exists(filename):
+        return []
 
-    def __str__(self):
-        return "%s %s: %s" % (self.courier.SHORTNAME, self.product or "parcel", self.tracking_number)
+    country = collections.namedtuple("Country", ["name", "alpha2", "alpha3", "numeric"])
+    countries = []
+    with open(filename, "r") as fileobj:
+        reader = csv.DictReader(fileobj)
+        for row in reader:
+            countries.append(country(
+                row["name"],
+                row["ISO3166-1-Alpha-2"],
+                row["ISO3166-1-Alpha-3"],
+                row["ISO3166-1-numeric"]
+            ))
+    return countries
 
-class ParcelEvent(object):
-    """
-    Generic parcel event
+countries = load_countries()
 
-    A generic event in the parcel's life.
-    """
+class Location(object):
 
-    def __init__(self, when):
-        self.when = when
+    def __init__(self, *args, **kwargs):
+        for k in ["name", "address", "postcode", "city"]:
+            self.__dict__[k] = kwargs.get(k)
 
-    def __lt__(self, other):
-        return self.when < other.when
+        if "country" in kwargs:
+            self.__dict__["country"] = self._find_country("name", kwargs["country"])
+        elif "country_code" in kwargs:
+            cc = kwargs["country_code"]
+            if len(cc) == 2:
+                self.__dict__["country"] = self._find_country("alpha2", cc)
+            elif len(cc) == 3:
+                self.__dict__["country"] = self._find_country("alpha3", cc)
+            else:
+                raise ValueError("Unexpected length %i for country_code" % len(cc))
+        elif "country_numeric" in kwargs:
+            self.__dict__["country"] = self._find_country("numeric", kwargs["country_numeric"])
 
-    def __eq__(self, other):
-        return self.when == other.when
-
-    def __str__(self):
-        if hasattr(self, "DESCRIPTION"):
-            return "%s: %s" % (self.when, self.DESCRIPTION)
-        else:
-            return str(self.when)
-
-class DataReceivedEvent(ParcelEvent):
-    """
-    Data received event
-
-    Special event when electronic shipping data has been received by the
-    courier. This usually only means that data for the parcel has been
-    received, but the parcel has not reached the courier yet.
-    """
-
-    DESCRIPTION = "received electronic shipping information"
-
-class CancelledEvent(ParcelEvent):
-    """
-    Parcel cancelled event
-
-    The electronic shipping information which has previously been avisoed has
-    been cancelled. The parcel will not be sent.
-    """
-
-    DESCRIPTION = "cancelled"
-
-class LocationEvent(ParcelEvent):
-    """
-    Location-based event
-
-    Event that involves the physical parcel being at a specific location. This
-    event is not returned directly, instead various subclasses that provide
-    more detail are used.
-    """
-
-    def __init__(self, location, *args, **kwargs):
-        super(LocationEvent, self).__init__(*args, **kwargs)
-        self.location = location
+    @staticmethod
+    def _find_country(field_name, value):
+        value = value.lower()
+        for country in countries:
+            if getattr(country, field_name).lower() == value:
+                return country
 
     def __str__(self):
-        if hasattr(self, "DESCRIPTION"):
-            return "%s %s: %s" % (self.when, self.location, self.DESCRIPTION)
-        else:
-            return "%s %s" % (self.when, self.location)
+        return "%s, %s" % (self.city, self.country.alpha2)
 
-class SortEvent(LocationEvent):
-    """
-    Parcel sort event
-    """
+class Parcel(metaclass=abc.ABCMeta):
 
-    DESCRIPTION = "sort"
+    @abc.abstractproperty
+    def tracking_number(self):
+        pass
 
-class StoredEvent(LocationEvent):
-    """
-    Parcel stored event
+    @property
+    def product(self):
+        raise NotImplementedError()
 
-    Parcel has been stored. This can be due to errors (e.g. address not found)
-    but it can also just be a routine step (e.g. a parcel being stored until
-    the next truck to another depot is ready.
-    """
+    @property
+    def weight(self):
+        raise NotImplementedError()
 
-    DESCRIPTION = "stored"
-
-class PostedEvent(LocationEvent):
-    """
-    Parcel posted event
-
-    Parcel has been posted at the Parcel shop ("Paketshop") or postal office by
-    the sender.
-    """
-
-    DESCRIPTION = "posted by sender"
-
-class PickupEvent(LocationEvent):
-    """
-    Parcel pickup event
-
-    Parcel has been picked up by the courier at the sender's location.
-    """
-
-    DESCRIPTION = "pickup at sender's location"
-
-class InDeliveryEvent(LocationEvent):
-    """
-    Parcel in delivery event
-
-    The parcel is out for delivery.
-    """
-
-    DESCRIPTION = "out for delivery"
-
-class DeliveryEvent(LocationEvent):
-    """
-    Parcel delivery event
-
-    The parcel has successfully been delivered.
-    """
-
-    DESCRIPTION = "delivered"
-
-    def __init__(self, recipient, *args, **kwargs):
-        super(DeliveryEvent, self).__init__(*args, **kwargs)
-        self.recipient = recipient
-
-class DeliveryDropOffEvent(LocationEvent):
-    """
-    Parcel drop off delivery event
-
-    The parcel has been dropped of by the courier without getting a signature,
-    usually because it was requested by the client ("Abstellgenehmigung").
-    """
-
-    DESCRIPTION = "delivered without signature"
-
-class DeliveryNeighbourEvent(DeliveryEvent):
-    """
-    Parcel neighbour delivery event
-
-    The parcel has been delivered to a neighbour.
-    """
-    DESCRIPTION = "delivered to neighbour"
-
-class FailedDeliveryEvent(LocationEvent):
-    """
-    Parcel delivery failed event
-
-    The parcel could not be delivered.
-    """
-    DESCRIPTION = "delivery failed"
-
-class RecipientUnavailableEvent(FailedDeliveryEvent):
-    """
-    Recipient unavailable event
-
-    The parcel could not be delivered because the recipient was not available.
-    """
-    DESCRIPTION = "delivery failed because recipient unavailable"
-
-class WrongAddressEvent(FailedDeliveryEvent):
-    """
-    Wrong address event
-
-    The parcel could not be delivered due to a wrong address.
-    """
-
-    DESCRIPTION = "delivery failed due to wrong address"
-
-class DeliveryRefusedEvent(FailedDeliveryEvent):
-    """
-    Delivery refused event
-
-    The parcel could not be delivered because the recipient refused to accept it
-    """
-
-    DESCRIPTION = "delivery refused by recipient"
-
-class RecipientNotificationEvent(LocationEvent):
-    """
-    Recipient notification event
-
-    The recipient has been notified.
-    """
-
-    DESCRIPTION = "recipient notified"
-
-    def __init__(self, notification, *args, **kwargs):
-        super(RecipientNotificationEvent, self).__init__(*args, **kwargs)
-        self.notification = notification
-
-class StoreDropoffEvent(LocationEvent):
-    """
-    Store drop-off event
-
-    The parcel has been dropped of at a store ("Paketshop").
-    """
-
-    DESCRIPTION = "dropped of at store"
-
-class StoreNotPickedUpEvent(FailedDeliveryEvent):
-    """
-    Store not picked up event
-
-    The parcel was dropped off at a store but never picked up by the recipient
-    """
-
-    DESCRIPTION = "storage time exceeded"
-
-class ReturnEvent(LocationEvent):
-    """
-    Parcel return event
-
-    The parcel will be returned to the sender
-    """
-
-    DESCRIPTION = "returning"
+    def __str__(self):
+        try:
+            product = self.product
+        except NotImplementedError:
+            product = "Parcel"
+        return "<%s %s>" % (product, self.tracking_number)
