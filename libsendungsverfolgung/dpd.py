@@ -49,36 +49,119 @@ class Parcel(base.Parcel):
 
             label = event["contents"][0]["label"]
 
-            if label == "Order information has been transmitted to DPD.":
-                pe = DataReceivedEvent(
+            if label in (
+                "Order information has been transmitted to DPD.",
+                "The data of your delivery specifications has been transmitted.",
+            ):
+                events.append(DataReceivedEvent(
                     when=when
-                )
+                ))
             elif label in("In transit.", "At parcel delivery centre."):
-                pe = SortEvent(
+                events.append(SortEvent(
                     when=when,
                     location=location
-                )
+                ))
             elif label == "Out for delivery.":
-                pe = InDeliveryEvent(
+                events.append(InDeliveryEvent(
                     when=when,
                     location=location
-                )
+                ))
             elif label == "Unfortunately we have not been able to deliver your parcel.":
-                pe = FailedDeliveryEvent(
+                if len(event["contents"]) > 1:
+                    label2 = event["contents"][1]["label"]
+                    if label2 == "Consignee not located, notification has been left.":
+                        events.append(RecipientUnavailableEvent(
+                            when=when,
+                            location=location
+                        ))
+                        events.append(RecipientNotificationEvent(
+                            "notification",
+                            when=when,
+                            location=location
+                        ))
+                    elif label2 == "Consignee address not correct.":
+                        events.append(WrongAddressEvent(
+                            when=when,
+                            location=location
+                        ))
+                    else:
+                        events.append(FailedDeliveryEvent(
+                            when=when,
+                            location=location
+                        ))
+                else:
+                    events.append(FailedDeliveryEvent(
+                        when=when,
+                        location=location
+                    ))
+            elif label in (
+                "We're sorry but your parcel couldn't be delivered as arranged.",
+                "Back at parcel delivery centre after an unsuccessful delivery attempt.",
+            ):
+                events.append(InboundSortEvent(
                     when=when,
                     location=location
-                )
+                ))
             elif label == "Delivered.":
-                pe = DeliveryEvent(
+                if len(event["contents"]) > 1:
+                    label2 = event["contents"][1]["label"]
+                    if label2 in (
+                        "Delivery / general authorisation to deposit.",
+                        "Delivery / one-off authorisation to deposit.",
+                    ):
+                        events.append(DeliveryDropOffEvent(
+                            when=when,
+                            location=location
+                        ))
+                    else:
+                        events.append(DeliveryEvent(
+                            when=when,
+                            location=location,
+                            recipient=None
+                        ))
+                else:
+                    events.append(DeliveryEvent(
+                        when=when,
+                        location=location,
+                        recipient=None
+                    ))
+            elif label == "Transfer to DPD ParcelShop by DPD driver.":
+                events.append(StoreDropoffEvent(
+                    when=when,
+                    location=location
+                ))
+            elif label == "Pick-up from the DPD ParcelShop by DPD driver":
+                events.append(StorePickupEvent(
+                    when=when,
+                    location=location,
+                ))
+            elif label == "Picked up from DPD ParcelShop by consignee.":
+                events.append(DeliveryEvent(
                     when=when,
                     location=location,
                     recipient=None
-                )
-            else:
-                pe = ParcelEvent(
-                    when=when
-                )
+                ))
+            elif label == "Collected by consignee from DPD ParcelShop.":
+                if len(event["contents"]) > 1:
+                    label2 = event["contents"][1]["label"]
+                    if label2 in (
+                        "Delivery / general authorisation to deposit.",
+                        "Delivery / one-off authorisation to deposit.",
+                    ):
+                        events.append(DeliveryDropOffEvent(
+                            when=when,
+                            location=location
+                        ))
+                    else:
+                        events.append(DeliveryEvent(
+                            when=when,
+                            location=location,
+                            recipient=None
+                        ))
 
-            events.append(pe)
+            else:
+                events.append(ParcelEvent(
+                    when=when
+                ))
 
         return events

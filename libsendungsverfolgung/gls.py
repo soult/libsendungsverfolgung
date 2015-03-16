@@ -138,7 +138,10 @@ class Parcel(base.Parcel):
                     when=when,
                     location=location
                 )
-            elif descr == "Delivered to a GLS Parcel Shop":
+            elif descr in (
+                "Delivered to a GLS Parcel Shop",
+                "Inbound to GLS location to a GLS Parcel Shop",
+            ):
                 pe = StoreDropoffEvent(
                     when=when,
                     location=location

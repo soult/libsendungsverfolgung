@@ -202,10 +202,19 @@ class StoreDropoffEvent(LocationEvent):
     """
     Store drop-off event
 
-    The parcel has been dropped of at a store ("Paketshop").
+    The parcel has been dropped off at a store ("Paketshop").
     """
 
-    DESCRIPTION = "dropped of at store"
+    DESCRIPTION = "dropped off at store"
+
+class StorePickupEvent(LocationEvent):
+    """
+    Store pick-up event
+
+    The parcel has been picked from a store ("Paketshop").
+    """
+
+    DESCRIPTION = "picked up from store"
 
 class StoreNotPickedUpEvent(FailedDeliveryEvent):
     """
