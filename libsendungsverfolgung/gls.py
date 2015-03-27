@@ -79,6 +79,9 @@ class Parcel(base.Parcel):
 
     @property
     def events(self):
+        if not "history" in self._data["tuStatus"][0]:
+            return []
+
         events = []
 
         for event in self._data["tuStatus"][0]["history"]:
