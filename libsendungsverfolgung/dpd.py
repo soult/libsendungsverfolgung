@@ -84,6 +84,11 @@ class Parcel(base.Parcel):
                             when=when,
                             location=location
                         ))
+                    elif label2.startswith("Refusal to accept delivery"):
+                        events.append(DeliveryRefusedEvent(
+                            when=when,
+                            location=location
+                        ))
                     else:
                         events.append(FailedDeliveryEvent(
                             when=when,
