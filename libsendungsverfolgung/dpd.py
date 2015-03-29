@@ -1,10 +1,19 @@
 import datetime
 import json
+import re
 import requests
 import time
 
 from . import base
 from .events import *
+
+class Location(base.Location):
+
+    def __init__(self, city):
+        match = re.match(r"^(.+) \(([A-Z]{2})\)$", city)
+        if not match:
+            raise ValueError("Invalid location: %s" % city)
+        super(Location, self).__init__(city=match.group(1), country_code=match.group(2))
 
 class Parcel(base.Parcel):
 
@@ -25,6 +34,7 @@ class Parcel(base.Parcel):
         r = requests.get("https://tracking.dpd.de/cgi-bin/simpleTracking.cgi", params=params)
 
         self._data = json.loads(r.text[7:-1])
+        print(json.dumps(self._data, indent=4, sort_keys=True))
 
         if "ErrorJSON" in self._data:
             if self._data["ErrorJSON"]["code"] == -8:
@@ -45,7 +55,10 @@ class Parcel(base.Parcel):
 
         for event in self._data["TrackingStatusJSON"]["statusInfos"]:
             when = datetime.datetime.strptime(event["date"] + event["time"], "%d-%m-%Y%H:%M ")
-            location = event["city"]
+            try:
+                location = Location(event["city"])
+            except ValueError:
+                pass
 
             label = event["contents"][0]["label"]
 
