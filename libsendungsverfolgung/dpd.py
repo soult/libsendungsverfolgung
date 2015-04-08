@@ -1,4 +1,5 @@
 import datetime
+import html.parser
 import json
 import re
 import requests
@@ -14,6 +15,145 @@ class Location(base.Location):
         if not match:
             raise ValueError("Invalid location: %s" % city)
         super(Location, self).__init__(city=match.group(1), country_code=match.group(2))
+
+class Store(base.Store):
+
+    class StoreHTMLParser(html.parser.HTMLParser):
+
+        STATE_START = 2**0
+        STATE_IDLE = 2**1
+        STATE_SECTION = 2**2
+        STATE_SECTION_HEADING = 2**3
+        STATE_ROW = 2**4
+        STATE_CELL = 2**5
+
+        STATE_ADDRESS = 2**6
+        STATE_CONTACT = 2**7
+        STATE_OPENING_HOURS = 2**8
+
+        def __init__(self, *args, **kwargs):
+            super(Store.StoreHTMLParser, self).__init__(*args, **kwargs)
+            self.state = self.STATE_IDLE
+
+        def _in_state(self, *states):
+            state = states[0]
+            for s in states[1:]:
+                state |= s
+            return (self.state & state) == state
+
+        def handle_starttag(self, tag, attrs):
+            attrs = dict(attrs)
+            if self._in_state(self.STATE_START) and tag == "div" and attrs.get("class") == "parcelShopDetails":
+                self.state = self.STATE_IDLE
+            elif self._in_state(self.STATE_IDLE) and tag == "div":
+                div_class = attrs.get("class")
+                if div_class == "address":
+                    self.state = self.STATE_ADDRESS
+                    self._address = ""
+                elif div_class == "contact":
+                    self.state = self.STATE_CONTACT
+                    self._contact = []
+                elif div_class == "opening-hours":
+                    self.state = self.STATE_OPENING_HOURS
+                    self._opening_hours = []
+                self.state |= self.STATE_SECTION
+            elif self._in_state(self.STATE_SECTION) and tag == "b":
+                self.state = (self.state ^ self.STATE_SECTION) | self.STATE_SECTION_HEADING
+            elif self._in_state(self.STATE_SECTION) and tag == "tr":
+                self.state = (self.state ^ self.STATE_SECTION) | self.STATE_ROW
+                if self._in_state(self.STATE_CONTACT):
+                    self._contact.append([])
+                elif self._in_state(self.STATE_OPENING_HOURS):
+                    self._opening_hours.append([])
+            elif self._in_state(self.STATE_ROW) and tag in ("th", "td"):
+                self.state = (self.state ^ self.STATE_ROW) | self.STATE_CELL
+                if self._in_state(self.STATE_CONTACT):
+                    self._contact[-1].append("")
+                elif self._in_state(self.STATE_OPENING_HOURS):
+                    self._opening_hours[-1].append("")
+
+        def handle_endtag(self, tag):
+            if self._in_state(self.STATE_SECTION_HEADING) and tag == "b":
+                self.state = (self.state ^ self.STATE_SECTION_HEADING) | self.STATE_SECTION
+            elif self._in_state(self.STATE_SECTION) and tag == "div":
+                self.state = self.STATE_IDLE
+            elif self._in_state(self.STATE_ROW) and tag == "tr":
+                self.state = (self.state ^ self.STATE_ROW) | self.STATE_SECTION
+            elif self._in_state(self.STATE_CELL) and tag in ("th", "td"):
+                self.state = (self.state ^ self.STATE_CELL) | self.STATE_ROW
+
+        def handle_startendtag(self, tag, attrs):
+            if self._in_state(self.STATE_SECTION_HEADING):
+                return
+            if self._in_state(self.STATE_ADDRESS) and tag == "br":
+                self._address += "\n"
+
+        def handle_data(self, data):
+            if self._in_state(self.STATE_SECTION_HEADING):
+                return
+            elif self._in_state(self.STATE_ADDRESS):
+                self._address += data
+            elif self._in_state(self.STATE_CONTACT, self.STATE_CELL):
+                self._contact[-1][-1] += data
+            elif self._in_state(self.STATE_OPENING_HOURS, self.STATE_CELL):
+                self._opening_hours[-1][-1] += data
+
+        def handle_entityref(self, name):
+            if self._in_state(self.STATE_ADDRESS) and name == "nbsp":
+                self._address += " "
+
+        def get_location(self):
+            address_data = self._address.strip().split("\n")
+            address = "\n".join(address_data[1:-1])
+
+            match = re.match(r"^(.+?) (.+) \(([A-Z]{2})\)$", address_data[-1])
+            postcode, city, country_code = match.groups()
+
+            return (address, postcode, city, country_code)
+
+        def get_contact(self):
+            phone = email = None
+
+            for k, v in self._contact:
+                if k == "Phone:":
+                    email = v
+                elif k == "Fax:":
+                    phone = v
+
+            return (phone, email)
+
+        def get_opening_hours(self):
+            opening_hours = []
+            for row in self._opening_hours:
+                if row[1] == "closed":
+                    continue
+                day, before_noon, afternoon = row
+                assert day[:2] in ("Mo", "Tu", "We", "Th", "Fr", "Sa", "Su")
+                if before_noon[-5:] == afternoon[:5]:
+                    opening_hours.append("%s %s-%s" % (day[:2], before_noon[:5], afternoon[-5:]))
+                else:
+                    opening_hours.append("%s %s,%s" % (day[:2], before_noon, afternoon))
+            return "; ".join(opening_hours)
+
+    def __init__(self, label, content):
+        parser = self.StoreHTMLParser()
+        parser.feed(content)
+
+        name = label
+        address, postcode, city, country_code = parser.get_location()
+        opening_hours = parser.get_opening_hours()
+        phone, email = parser.get_contact()
+
+        super(Store, self).__init__(
+            name=name,
+            address=address,
+            postcode=postcode,
+            city=city,
+            country_code=country_code,
+            opening_hours=opening_hours,
+            phone=phone,
+            email=email
+        )
 
 class Parcel(base.Parcel):
 
@@ -34,7 +174,6 @@ class Parcel(base.Parcel):
         r = requests.get("https://tracking.dpd.de/cgi-bin/simpleTracking.cgi", params=params)
 
         self._data = json.loads(r.text[7:-1])
-        print(json.dumps(self._data, indent=4, sort_keys=True))
 
         if "ErrorJSON" in self._data:
             if self._data["ErrorJSON"]["code"] == -8:
@@ -144,6 +283,9 @@ class Parcel(base.Parcel):
                         recipient=None
                     ))
             elif label == "Transfer to DPD ParcelShop by DPD driver.":
+                assert len(event["contents"]) == 2
+                store_info = event["contents"][1]
+                location = Store(store_info["label"], store_info["content"])
                 events.append(StoreDropoffEvent(
                     when=when,
                     location=location

@@ -52,6 +52,13 @@ class Location(object):
     def __str__(self):
         return "%s, %s" % (self.city, self.country.alpha2)
 
+class Store(Location):
+
+    def __init__(self, *args, **kwargs):
+        super(Store, self).__init__(*args, **kwargs)
+        for k in ["opening_hours", "phone", "email"]:
+            self.__dict__[k] = kwargs.get(k)
+
 class Parcel(metaclass=abc.ABCMeta):
 
     @abc.abstractproperty
