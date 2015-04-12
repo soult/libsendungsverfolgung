@@ -56,7 +56,7 @@ class Store(Location):
 
     def __init__(self, *args, **kwargs):
         super(Store, self).__init__(*args, **kwargs)
-        for k in ["opening_hours", "phone", "email"]:
+        for k in ["opening_hours", "phone", "fax", "email"]:
             self.__dict__[k] = kwargs.get(k)
 
 class Parcel(metaclass=abc.ABCMeta):

@@ -14,6 +14,73 @@ class Location(base.Location):
     def __init__(self, data):
         return super(Location, self).__init__(city=data["city"], country_code=data["countryCode"])
 
+class Store(base.Store):
+
+    DAYS_OF_WEEK = ("Mo", "Tu", "We", "Th", "Fr", "Sa", "Su")
+
+    NOKIA_APP_ID = "s0Ej52VXrLa6AUJEenti"
+
+    @classmethod
+    def _parse_opening_hours(cls, data):
+        result = []
+        current_day = []
+
+        for part in data.split("|"):
+            match = re.match("^([A-Z][a-z])\.(?: - ([A-Z][a-z])\.)?: ", part)
+            if match:
+                if current_day:
+                    result[-1] += ",".join(current_day)
+                    current_day = []
+
+                day_start = cls.DAYS_OF_WEEK.index(match.group(1))
+                if match.group(2):
+                    day_end = cls.DAYS_OF_WEEK.index(match.group(2))
+                    result.append("%s-%s " % (cls.DAYS_OF_WEEK[day_start], cls.DAYS_OF_WEEK[day_end]))
+                else:
+                    result.append("%s " % cls.DAYS_OF_WEEK[day_start])
+                part = part[len(match.group(0)):]
+
+            match = re.match("^#(\d\d:\d\d) - (\d\d:\d\d)$", part)
+            if not match:
+                raise ValueError("Unable to parse opening hours")
+            current_day.append("%s-%s" % match.groups())
+
+        if current_day:
+            result[-1] += ",".join(current_day)
+
+        return "; ".join(result)
+
+    @classmethod
+    def from_id(cls, store_id):
+        params = {
+            "appId": cls.NOKIA_APP_ID,
+            "layerId": "48",
+            "query": "[like]/name3/%s" % store_id,
+            "rangeQuery": "",
+            "limit": "1",
+        }
+        r = requests.get(
+            "https://api.customlocation.nokia.com/v1/search/attribute",
+            params=params)
+        data = r.json()
+        if len(data.get("locations", [])) != 1:
+            raise ValueError("Invalid store ID")
+        data = data["locations"][0]
+
+        opening_hours = cls._parse_opening_hours(data["description"])
+
+        return cls(
+            name=data["name1"],
+            address=data["street"],
+            postcode=data["postalCode"],
+            city=data["city"],
+            country_code=data["country"],
+            phone=data.get("phone"),
+            fax=data.get("fax"),
+            email=data.get("email"),
+            opening_hours=opening_hours
+        )
+
 class Parcel(base.Parcel):
 
     def __init__(self, tracking_number, *args, **kwargs):
@@ -145,6 +212,8 @@ class Parcel(base.Parcel):
                 "Delivered to a GLS Parcel Shop",
                 "Inbound to GLS location to a GLS Parcel Shop",
             ):
+                if "parcelShop" in self._data["tuStatus"][0]:
+                    location = Store.from_id(self._data["tuStatus"][0]["parcelShop"].get("psID"))
                 pe = StoreDropoffEvent(
                     when=when,
                     location=location
