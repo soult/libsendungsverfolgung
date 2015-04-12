@@ -67,7 +67,7 @@ class Store(base.Store):
             params=params)
         data = r.json()
         if len(data.get("locations", [])) != 1:
-            raise ValueError("Invalid store ID")
+            return None
         data = data["locations"][0]
 
         opening_hours = cls._parse_opening_hours(data["description"])
@@ -221,7 +221,9 @@ class Parcel(base.Parcel):
                 "Inbound to GLS location to a GLS Parcel Shop",
             ):
                 if "parcelShop" in self._data["tuStatus"][0]:
-                    location = Store.from_id(self._data["tuStatus"][0]["parcelShop"].get("psID"))
+                    store = Store.from_id(self._data["tuStatus"][0]["parcelShop"].get("psID"))
+                    if store:
+                        location = store
                 pe = StoreDropoffEvent(
                     when=when,
                     location=location
