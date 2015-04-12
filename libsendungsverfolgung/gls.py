@@ -133,6 +133,11 @@ class Parcel(base.Parcel):
         return self._get_info("PRODUCT")
 
     @property
+    def recipient(self):
+        if "signature" in self._data["tuStatus"][0]:
+            return self._data["tuStatus"][0]["signature"]["value"]
+
+    @property
     def references(self):
         references = {}
         for info in self._data["tuStatus"][0]["references"]:
@@ -160,13 +165,13 @@ class Parcel(base.Parcel):
                 pe = DeliveryEvent(
                     when=when,
                     location=location,
-                    recipient=None
+                    recipient=self.recipient
                 )
             elif descr == "Delivered Handed over to neighbour":
                 pe = DeliveryNeighbourEvent(
                     when=when,
                     location=location,
-                    recipient=None
+                    recipient=self.recipient
                 )
             elif descr == "Delivered without proof of delivery":
                 pe = DeliveryDropOffEvent(
