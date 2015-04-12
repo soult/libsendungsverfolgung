@@ -142,6 +142,12 @@ class DeliveryEvent(LocationEvent):
         super(DeliveryEvent, self).__init__(*args, **kwargs)
         self.recipient = recipient
 
+    def __str__(self):
+        if self.recipient:
+            return "%s, %s: %s (signature: %s)" % (self.when, self.location, self.DESCRIPTION, self.recipient)
+        else:
+            return "%s, %s: %s" % (self.when, self.location, self.DESCRIPTION)
+
 class DeliveryDropOffEvent(LocationEvent):
     """
     Parcel drop off delivery event

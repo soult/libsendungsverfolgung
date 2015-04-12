@@ -73,6 +73,10 @@ class Parcel(metaclass=abc.ABCMeta):
     def weight(self):
         raise NotImplementedError()
 
+    @property
+    def recipient(self):
+        raise NotImplementedError()
+
     def __str__(self):
         try:
             product = self.product
