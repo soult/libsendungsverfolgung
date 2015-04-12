@@ -26,6 +26,11 @@ class Store(base.Store):
         current_day = []
 
         for part in data.split("|"):
+            match = re.match("^Annual closing: (\d{1,2}\.\d{1,2}\.\d\d) - (\d{1,2}\.\d{1,2}\.\d\d)", part)
+            if match:
+                part = part[len(match.group(0)):]
+                continue # FIXME
+
             match = re.match("^([A-Z][a-z])\.(?: - ([A-Z][a-z])\.)?: ", part)
             if match:
                 if current_day:
