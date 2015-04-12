@@ -40,10 +40,13 @@ class Store(base.Store):
                     result.append("%s " % cls.DAYS_OF_WEEK[day_start])
                 part = part[len(match.group(0)):]
 
-            match = re.match("^#(\d\d:\d\d) - (\d\d:\d\d)$", part)
-            if not match:
-                raise ValueError("Unable to parse opening hours")
-            current_day.append("%s-%s" % match.groups())
+            if part == "#--:-- - --:--":
+                result.pop()
+            else:
+                match = re.match("^#(\d\d:\d\d) - (\d\d:\d\d)$", part)
+                if not match:
+                    raise ValueError("Unable to parse opening hours")
+                current_day.append("%s-%s" % match.groups())
 
         if current_day:
             result[-1] += ",".join(current_day)
