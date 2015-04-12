@@ -13,3 +13,8 @@ else:
 print(parcel)
 for ev in parcel.events:
     print(ev)
+    if isinstance(ev, lsv.events.StoreDropoffEvent):
+        try:
+            print(ev.location.opening_hours)
+        except:
+            pass

@@ -31,6 +31,15 @@ class DataReceivedEvent(ParcelEvent):
 
     DESCRIPTION = "received electronic shipping information"
 
+class RedirectEvent(ParcelEvent):
+    """
+    Redirect event
+
+    The courier has been instructed to send the parcel to a different address.
+    """
+
+    DESCRIPTION = "redirected"
+
 class CancelledEvent(ParcelEvent):
     """
     Parcel cancelled event

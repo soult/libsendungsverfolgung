@@ -222,12 +222,21 @@ class Parcel(base.Parcel):
                 pe = DataReceivedEvent(
                     when=when
                 )
-            elif descr == "Stored" or descr.startswith("Retained at GLS location"):
+            elif descr == "Forwarded Redirected":
+                pe = RedirectEvent(
+                    when=when
+                )
+            elif descr == "Stored" or \
+                descr.startswith("Retained at GLS location due to ") or \
+                descr.startswith("Stored due to"):
                 pe = StoredEvent(
                     when=when,
                     location=location
                 )
-            elif descr == "Not delivered due to a wrong address":
+            elif descr in (
+                "Not delivered due to a wrong address",
+                "Not out for delivery due to a wrong address",
+                ):
                 pe = WrongAddressEvent(
                     when=when,
                     location=location
