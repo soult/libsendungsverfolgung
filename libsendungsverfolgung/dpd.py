@@ -213,6 +213,13 @@ class Parcel(base.Parcel):
                     when=when,
                     location=location
                 ))
+                if len(event["contents"]) > 1:
+                    label2 = event["contents"][1]["label"]
+                    if label2 == "Consignee address not correct.":
+                        events.append(WrongAddressEvent(
+                            when=when,
+                            location=location
+                        ))
             elif label == "Out for delivery.":
                 events.append(InDeliveryEvent(
                     when=when,
