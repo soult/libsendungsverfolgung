@@ -10,7 +10,7 @@ def load_countries():
 
     country = collections.namedtuple("Country", ["name", "alpha2", "alpha3", "numeric"])
     countries = []
-    with open(filename, "r") as fileobj:
+    with open(filename, "r", encoding="utf-8") as fileobj:
         reader = csv.DictReader(fileobj)
         for row in reader:
             countries.append(country(
