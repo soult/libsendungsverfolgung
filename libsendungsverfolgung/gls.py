@@ -156,6 +156,7 @@ class Parcel(base.Parcel):
                     references["shipment"] = info["value"]
                 elif info["name"] == "Customers own reference number - per TU":
                     references["parcel"] = info["value"]
+        return references
 
     @property
     def events(self):
