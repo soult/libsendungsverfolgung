@@ -219,6 +219,9 @@ class Parcel(base.Parcel):
             except ValueError:
                 pass
 
+            if len(event["contents"]) == 0:
+                continue
+
             label = event["contents"][0]["label"]
 
             if label in (
@@ -310,13 +313,19 @@ class Parcel(base.Parcel):
                         recipient=self.recipient
                     ))
             elif label == "Transfer to DPD ParcelShop by DPD driver.":
-                assert len(event["contents"]) == 2
-                store_info = event["contents"][1]
-                location = Store(store_info["label"], store_info["content"])
-                events.append(StoreDropoffEvent(
-                    when=when,
-                    location=location
-                ))
+                for content in event["contents"][1:]:
+                    if content["contentType"] == "modal":
+                        location = Store(content["label"], content["content"])
+                        events.append(StoreDropoffEvent(
+                            when=when,
+                            location=location
+                        ))
+                        break
+                else:
+                    events.append(StoreDropoffEvent(
+                        when=when,
+                        location=location
+                    ))
             elif label == "Pick-up from the DPD ParcelShop by DPD driver":
                 events.append(StorePickupEvent(
                     when=when,
