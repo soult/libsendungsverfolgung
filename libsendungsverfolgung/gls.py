@@ -223,8 +223,10 @@ class Parcel(base.Parcel):
                     location=location
                 )
             elif descr in (
-                "Delivered to a GLS Parcel Shop",
-                "Inbound to GLS location to a GLS Parcel Shop",
+                "Delivered to a GLS Parcel Shop", # not sure if still in use
+                "Delivered to a GLS ParcelShop",
+                "Inbound to GLS location to a GLS Parcel Shop", # not sure if still in use
+                "Inbound to GLS location to a GLS ParcelShop",
             ):
                 if "parcelShop" in self._data["tuStatus"][0]:
                     store = Store.from_id(self._data["tuStatus"][0]["parcelShop"].get("psID"))
