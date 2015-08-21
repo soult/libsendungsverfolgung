@@ -251,6 +251,11 @@ class Parcel(base.Parcel):
                     when=when,
                     location=location
                 )
+                if descr == "Stored due to a wrong address":
+                    events.append(WrongAddressEvent(
+                        when=when,
+                        location=location
+                    ))
             elif descr in (
                 "Not delivered due to a wrong address",
                 "Not out for delivery due to a wrong address",
