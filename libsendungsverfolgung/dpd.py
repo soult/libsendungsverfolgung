@@ -285,6 +285,13 @@ class Parcel(base.Parcel):
                 "We're sorry but your parcel couldn't be delivered as arranged.",
                 "Back at parcel delivery centre after an unsuccessful delivery attempt.",
             ):
+                if len(event["contents"]) > 1:
+                    label2 = event["contents"][1]["label"]
+                    if label2 == "Return to consignor after unsuccessful delivery to third party.":
+                        events.append(ReturnEvent(
+                            when=when,
+                            location=location
+                        ))
                 events.append(InboundSortEvent(
                     when=when,
                     location=location
@@ -312,7 +319,7 @@ class Parcel(base.Parcel):
                         location=location,
                         recipient=self.recipient
                     ))
-            elif label == "Transfer to DPD ParcelShop by DPD driver.":
+            elif label == "Transfer to Pickup parcelshop by DPD driver.":
                 for content in event["contents"][1:]:
                     if content["contentType"] == "modal":
                         location = Store(content["label"], content["content"])
@@ -326,18 +333,18 @@ class Parcel(base.Parcel):
                         when=when,
                         location=location
                     ))
-            elif label == "Pick-up from the DPD ParcelShop by DPD driver":
+            elif label == "Pick-up from the Pickup parcelshop by DPD driver":
                 events.append(StorePickupEvent(
                     when=when,
                     location=location,
                 ))
-            elif label == "Picked up from DPD ParcelShop by consignee.":
+            elif label == "Collected by consignee from Pickup parcelshop.":
                 events.append(DeliveryEvent(
                     when=when,
                     location=location,
                     recipient=self.recipient
                 ))
-            elif label == "Collected by consignee from DPD ParcelShop.":
+            elif label == "Collected by consignee from Pickup parcelshop.":
                 if len(event["contents"]) > 1:
                     label2 = event["contents"][1]["label"]
                     if label2 in (
