@@ -338,11 +338,12 @@ class Parcel(base.Parcel):
                     when=when,
                     location=location,
                 ))
-            elif label == "Collected by consignee from Pickup parcelshop.":
+            elif label == "Collected by consignee from Pickup parcelshop." or \
+                label == "Picked up from Pickup parcelshop by consignee.":
                 events.append(DeliveryEvent(
                     when=when,
                     location=location,
-                    recipient=self.recipient
+                    recipient=None
                 ))
             elif label == "Collected by consignee from Pickup parcelshop.":
                 if len(event["contents"]) > 1:
@@ -359,7 +360,7 @@ class Parcel(base.Parcel):
                         events.append(DeliveryEvent(
                             when=when,
                             location=location,
-                            recipient=self.recipient
+                            recipient=None
                         ))
 
             else:
