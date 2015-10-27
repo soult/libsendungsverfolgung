@@ -170,63 +170,55 @@ class Parcel(base.Parcel):
             when = datetime.datetime.strptime(event["date"] + event["time"], "%Y-%m-%d%H:%M:%S")
             location = Location(event["address"])
 
-            if descr == "Delivered":
+            if descr == "The parcel has been delivered at the consignee.":
                 pe = DeliveryEvent(
                     when=when,
                     location=location,
                     recipient=self.recipient
                 )
-            elif descr == "Delivered Handed over to neighbour":
+            elif descr == "The parcel has been delivered at the neighbour´s (see parcel information).":
                 pe = DeliveryNeighbourEvent(
                     when=when,
                     location=location,
                     recipient=self.recipient
                 )
-            elif descr == "Delivered without proof of delivery":
+            elif descr == "The parcel has been delivered at the consignee or deposited as requested.":
                 pe = DeliveryDropOffEvent(
                     when=when,
                     location=location,
                 )
-            elif descr == "Out for delivery on GLS vehicle":
+            elif descr == "The parcel is loaded on the GLS delivery vehicle to be delivered in the course of the day.":
                 pe = InDeliveryEvent(
                     when=when,
                     location=location
                 )
-            # GLS rarely does outbound sort scans/events. This makes the
-            # tracking data very confusing because one would expect an outbound
-            # scan for each inbound scan. Additionally, GLS often has duplicate
-            # inbound scans. To avoid confusion, all inbound sort events are
-            # simply parsed as "regular" sort events.
             elif descr in (
-                "Inbound to GLS location",
-                "Inbound to GLS location sorted as Business-Small Parcel",
-                "Inbound to GLS location manually sorted",
+                "The parcel has entered the GLS system.",
+                "The parcel has reached the GLS location."
             ):
                 pe = SortEvent(
                     when=when,
                     location=location
                 )
-            elif descr == "Outbound from GLS location":
+            elif descr == "The parcel has left the GLS location.":
                 pe = OutboundSortEvent(
                     when=when,
                     location=location
                 )
-            elif descr == "Not delivered because consignee not in":
+            elif descr == "The parcel could not be delivered as the consignee was absent.":
                 pe = RecipientUnavailableEvent(
                     when=when,
                     location=location
                 )
-            elif descr == "Consignee contacted Notification card":
+            elif descr == "The consignee was informed by notification card about the delivery/pickup attempt.":
                 pe =  RecipientNotificationEvent(
                     notification="card",
                     when=when,
                     location=location
                 )
             elif descr in (
-                "Delivered to a GLS Parcel Shop", # not sure if still in use
-                "Delivered to a GLS ParcelShop",
-                "Inbound to GLS location to a GLS Parcel Shop", # not sure if still in use
-                "Inbound to GLS location to a GLS ParcelShop",
+                "The parcel has been delivered at the GLS ParcelShop (see parcel information).",
+                "The parcel has reached the GLS ParcelShop."
             ):
                 if "parcelShop" in self._data["tuStatus"][0]:
                     store = Store.from_id(self._data["tuStatus"][0]["parcelShop"].get("psID"))
@@ -236,7 +228,7 @@ class Parcel(base.Parcel):
                     when=when,
                     location=location
                 )
-            elif descr == "Information transmitted, no shipment available now":
+            elif descr == "The parcel data was entered into the GLS system; the parcel was not yet handed over to GLS.":
                 pe = DataReceivedEvent(
                     when=when
                 )
@@ -244,37 +236,35 @@ class Parcel(base.Parcel):
                 pe = RedirectEvent(
                     when=when
                 )
-            elif descr == "Stored" or \
-                descr.startswith("Retained at GLS location due to ") or \
-                descr.startswith("Stored due to"):
+            elif descr == "The parcel is stored in the GLS warehouse." or \
+                descr.startswith("The parcel is being stored in the GLS depot."):
                 pe = StoredEvent(
                     when=when,
                     location=location
                 )
-                if descr == "Stored due to a wrong address":
+                if descr == "The parcel is being stored in the GLS depot. It could not be delivered as further address information is needed.":
                     events.append(WrongAddressEvent(
                         when=when,
                         location=location
                     ))
             elif descr in (
-                "Not delivered due to a wrong address",
-                "Not out for delivery due to a wrong address",
+                "The parcel could not be delivered as further address information is needed."
                 ):
                 pe = WrongAddressEvent(
                     when=when,
                     location=location
                 )
-            elif descr == "Not delivered due to declined acceptance":
+            elif descr == "The parcel has been refused.":
                 pe = DeliveryRefusedEvent(
                     when=when,
                     location=location
                 )
-            elif descr == "Not delivered Parcel Shop storage term is exceeded":
+            elif descr == "The parcel has reached the maximum storage time in the ParcelShop.":
                 pe = StoreNotPickedUpEvent(
                     when=when,
                     location=location
                 )
-            elif descr == "Returned to consignor":
+            elif descr == "The parcel has been returned to the shipper.":
                 pe = ReturnEvent(
                     when=when,
                     location=location
