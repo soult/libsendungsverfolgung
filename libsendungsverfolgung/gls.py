@@ -236,7 +236,7 @@ class Parcel(base.Parcel):
                 pe = RedirectEvent(
                     when=when
                 )
-            elif descr == "The parcel is stored in the GLS warehouse." or \
+            elif descr.startswith("The parcel is stored in the GLS warehouse.") or \
                 descr.startswith("The parcel is being stored in the GLS depot.") or \
                 descr.startswith("The parcel remains in the GLS depot."):
                 pe = StoredEvent(
@@ -244,6 +244,7 @@ class Parcel(base.Parcel):
                     location=location
                 )
                 if descr == "The parcel is being stored in the GLS depot. It could not be delivered as further address information is needed." or \
+                    descr == "The parcel is stored in the GLS warehouse. It cannot be delivered as further address information is needed." or \
                     descr == "The parcel remains in the GLS depot. It cannot be delivered due to missing address data.":
                     events.append(WrongAddressEvent(
                         when=when,
