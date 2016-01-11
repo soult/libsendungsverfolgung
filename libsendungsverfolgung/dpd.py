@@ -213,7 +213,10 @@ class Parcel(base.Parcel):
         events = []
 
         for event in self._data["TrackingStatusJSON"]["statusInfos"]:
-            when = datetime.datetime.strptime(event["date"] + event["time"], "%d-%m-%Y%H:%M ")
+            event_time = event["time"]
+            if event_time == "-":
+                event_time = "23:59 "
+            when = datetime.datetime.strptime(event["date"] + event_time, "%d-%m-%Y%H:%M ")
             try:
                 location = Location(event["city"])
             except ValueError:
