@@ -11,6 +11,7 @@ else:
     parcel = lsv.GLS.Parcel(sys.argv[1])
 
 print(parcel)
+print(parcel.weight)
 for ev in parcel.events:
     print(ev)
     if isinstance(ev, lsv.events.StoreDropoffEvent):

@@ -128,8 +128,10 @@ class Parcel(base.Parcel):
     def weight(self):
         weight = self._get_info("WEIGHT")
         if weight:
-            assert weight[-3:] == " kg"
-            return decimal.Decimal(weight[:-3])
+            if weight[-3:] == " kg":
+                return decimal.Decimal(weight[:-3])
+            elif weight[-26:] == " #Missing TextValue: 25197":
+                return decimal.Decimal(weight[:-26])
 
     @property
     def tracking_number(self):
