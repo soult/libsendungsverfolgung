@@ -284,10 +284,12 @@ class Parcel(base.Parcel):
                         when=when,
                         location=location
                     ))
-            elif label in (
-                "We're sorry but your parcel couldn't be delivered as arranged.",
-                "Back at parcel delivery centre after an unsuccessful delivery attempt.",
-            ):
+            elif label == "Back at parcel delivery centre after an unsuccessful delivery attempt.":
+                events.append(InboundSortEvent(
+                    when=when,
+                    location=location
+                ))
+            elif label == "We're sorry but your parcel couldn't be delivered as arranged.":
                 if len(event["contents"]) > 1:
                     label2 = event["contents"][1]["label"]
                     if label2 == "Return to consignor after unsuccessful delivery to third party.":
@@ -295,10 +297,11 @@ class Parcel(base.Parcel):
                             when=when,
                             location=location
                         ))
-                events.append(InboundSortEvent(
-                    when=when,
-                    location=location
-                ))
+                    elif label2 == "Consignee address not correct.":
+                        events.append(WrongAddressEvent(
+                            when=when,
+                            location=location
+                        ))
             elif label == "Delivered.":
                 if len(event["contents"]) > 1:
                     label2 = event["contents"][1]["label"]
