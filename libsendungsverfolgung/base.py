@@ -50,7 +50,10 @@ class Location(object):
                 return country
 
     def __str__(self):
-        return "%s, %s" % (self.city, self.country.alpha2)
+        if self.city:
+            return "%s, %s" % (self.city, self.country.alpha2)
+        else:
+            return self.country.alpha2
 
 class Store(Location):
 
