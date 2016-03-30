@@ -172,7 +172,7 @@ class Parcel(base.Parcel):
             when = datetime.datetime.strptime(event["date"] + event["time"], "%Y-%m-%d%H:%M:%S")
             location = Location(event["address"])
 
-            if descr == "The parcel has been delivered at the consignee.":
+            if descr == "The parcel was handed over to the consignee.":
                 pe = DeliveryEvent(
                     when=when,
                     location=location,
@@ -189,13 +189,13 @@ class Parcel(base.Parcel):
                     when=when,
                     location=location,
                 )
-            elif descr == "The parcel is loaded on the GLS delivery vehicle to be delivered in the course of the day.":
+            elif descr == "The parcel is in the GLS delivery vehicle to be delivered in the course of the day.":
                 pe = InDeliveryEvent(
                     when=when,
                     location=location
                 )
             elif descr in (
-                "The parcel has entered the GLS system.",
+                "The parcel was handed over to GLS.",
                 "The parcel has reached the GLS location."
             ):
                 pe = SortEvent(
