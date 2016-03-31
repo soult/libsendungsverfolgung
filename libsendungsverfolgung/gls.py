@@ -274,7 +274,7 @@ class Parcel(base.Parcel):
                     when=when,
                     location=location
                 )
-            elif descr == "Data erased from GLS system":
+            elif descr == "The parcel data have been deleted from the GLS IT system.":
                 pe = CancelledEvent(
                     when=when
                 )
