@@ -234,6 +234,25 @@ class Parcel(base.Parcel):
                 events.append(DataReceivedEvent(
                     when=when
                 ))
+            elif label == "Parcel handed to Pickup parcelshop by consignor.":
+                events.append(PostedEvent(
+                    when=when,
+                    location=location
+                ))
+            elif label == "Pick-up from the Pickup parcelshop by DPD driver":
+                for content in event["contents"][1:]:
+                    if content["contentType"] == "modal":
+                        location = Store(content["label"], content["content"])
+                        events.append(StorePickupEvent(
+                            when=when,
+                            location=location
+                        ))
+                        break
+                else:
+                    events.append(StorePickupEvent(
+                        when=when,
+                        location=location
+                    ))
             elif label in("In transit.", "At parcel delivery centre."):
                 events.append(SortEvent(
                     when=when,
