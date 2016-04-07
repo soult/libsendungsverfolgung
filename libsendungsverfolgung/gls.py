@@ -234,7 +234,8 @@ class Parcel(base.Parcel):
                 pe = DataReceivedEvent(
                     when=when
                 )
-            elif descr == "Forwarded Redirected":
+            elif descr == "Forwarded Redirected" or \
+                descr == "The changed delivery option has been saved in the GLS system.":
                 pe = RedirectEvent(
                     when=when
                 )
