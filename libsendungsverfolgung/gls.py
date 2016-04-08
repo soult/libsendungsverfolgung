@@ -219,6 +219,7 @@ class Parcel(base.Parcel):
                     location=location
                 )
             elif descr in (
+                "The parcel has been delivered at the GLS ParcelShop (see above).",
                 "The parcel has been delivered at the GLS ParcelShop (see parcel information).",
                 "The parcel has reached the GLS ParcelShop."
             ):
