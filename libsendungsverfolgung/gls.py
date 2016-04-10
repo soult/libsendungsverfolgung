@@ -68,7 +68,7 @@ class Store(base.Store):
             "limit": "1",
         }
         r = requests.get(
-            "https://api.customlocation.nokia.com/v1/search/attribute",
+            "https://customlocation.api.here.com/v1/search/attribute",
             params=params)
         data = r.json()
         if len(data.get("locations", [])) != 1:
