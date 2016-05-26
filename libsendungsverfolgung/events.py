@@ -64,6 +64,8 @@ class LocationEvent(ParcelEvent):
         self.location = location
 
     def __str__(self):
+        if self.location == None:
+            return super(LocationEvent, self).__str__()
         if hasattr(self, "DESCRIPTION"):
             return "%s, %s: %s" % (self.when, self.location, self.DESCRIPTION)
         else:

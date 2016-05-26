@@ -3,10 +3,11 @@ import collections
 import csv
 import os.path
 
-__all__ = ["base", "events", "dpd", "gls", "hermes"]
+__all__ = ["base", "events", "dhl", "dpd", "gls", "hermes"]
 
 from . import *
 
+DHL = dhl
 DPD = dpd
 GLS = gls
 Hermes = hermes

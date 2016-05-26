@@ -41,6 +41,8 @@ class Location(object):
                 raise ValueError("Unexpected length %i for country_code" % len(cc))
         elif "country_numeric" in kwargs:
             self.__dict__["country"] = self._find_country("numeric", kwargs["country_numeric"])
+        else:
+            self.__dict__["country"] = None
 
     @staticmethod
     def _find_country(field_name, value):
@@ -51,7 +53,10 @@ class Location(object):
 
     def __str__(self):
         if self.city:
-            return "%s, %s" % (self.city, self.country.alpha2)
+            if self.country:
+                return "%s, %s" % (self.city, self.country.alpha2)
+            else:
+                return self.city
         else:
             return self.country.alpha2
 
