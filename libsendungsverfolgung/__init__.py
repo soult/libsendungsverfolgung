@@ -12,9 +12,8 @@ DPD = dpd
 GLS = gls
 Hermes = hermes
 
-def autodetect(tracking_number):
-    for cls in [gls.Parcel]:
-        try:
-            return cls.__init__(tracking_number)
-        except ValueError:
-            pass
+def from_barcode(barcode):
+    for cls in [dhl.Parcel, dpd.Parcel, gls.Parcel, hermes.Parcel]:
+        instanz = cls.from_barcode(barcode)
+        if instanz:
+            return instanz

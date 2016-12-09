@@ -93,20 +93,39 @@ class Parcel(base.Parcel):
 
     def __init__(self, tracking_number, *args, **kwargs):
         tracking_number = str(tracking_number)
-        match = re.match("^([0-9]{11})([0-9])$", tracking_number)
-        if match:
-            if self.check_digit(match.group(0)) != match.group(1):
-                raise ValueError("Invalid check digit")
-        elif not (re.match("^[0-9]{11}$", tracking_number) or re.match("^[A-Z0-9]{8}$", tracking_number)):
-            raise ValueError("Invalid tracking number")
+
+        self._tracking_number = None
+        self._tracking_code = None
+        if re.match("^[0-9]{11}$", tracking_number):
+            self._tracking_number = tracking_number + str(self.check_digit(tracking_number))
+        elif re.match("^[A-Z0-9]{8}$", tracking_number):
+            self._tracking_code = tracking_number
+        else:
+            self._tracking_number = tracking_number
+        self._data = None
 
         super(Parcel, self).__init__(*args, **kwargs)
-        self._get_data(tracking_number)
 
-    def _get_data(self, tracking_number):
+    @classmethod
+    def from_barcode(cls, barcode):
+        barcode=str(barcode)
+
+        if len(barcode) == 123:
+            track_id = barcode[33:41]
+            return cls(track_id)
+
+        match = re.match("^([0-9]{11})([0-9])$", barcode)
+        if match:
+            if str(cls.check_digit(match.group(1))) == match.group(2):
+                return cls(barcode)
+
+    def fetch_data(self):
+        if self._data:
+            return
+
         params = {
             "caller": "witt002",
-            "match": tracking_number,
+            "match": self._tracking_number or self._tracking_code,
             "milis": int(time.time() * 1000)
         }
         r = requests.get(
@@ -114,18 +133,20 @@ class Parcel(base.Parcel):
             params=params)
 
         if r.status_code == 404:
-            raise ValueError("Unknown tracking number")
+            raise base.UnknownParcelException()
 
         self._data = r.json()
         if not "tuStatus" in self._data:
-            raise ValueError("Unknown tracking number")
+            raise base.UnknownParcelException()
 
     def _get_info(self, key):
         for info in self._data["tuStatus"][0]["infos"]:
             if info["type"] == key:
                 return info["value"]
+
     @property
     def weight(self):
+        self.fetch_data()
         weight = self._get_info("WEIGHT")
         if weight:
             if weight[-3:] == " kg":
@@ -135,20 +156,28 @@ class Parcel(base.Parcel):
 
     @property
     def tracking_number(self):
-        tn = self._data["tuStatus"][0]["tuNo"]
-        return tn + str(self.check_digit(tn))
+        if not self._tracking_number:
+            self.fetch_data()
+            tn = self._data["tuStatus"][0]["tuNo"]
+            return tn + str(self.check_digit(tn))
+
+        return self._tracking_number
+
 
     @property
     def product(self):
+        self.fetch_data()
         return self._get_info("PRODUCT")
 
     @property
     def recipient(self):
+        self.fetch_data()
         if "signature" in self._data["tuStatus"][0]:
             return self._data["tuStatus"][0]["signature"]["value"]
 
     @property
     def references(self):
+        self.fetch_data()
         references = {}
         for info in self._data["tuStatus"][0]["references"]:
             if info["type"] == "GLSREF":
@@ -162,6 +191,7 @@ class Parcel(base.Parcel):
 
     @property
     def events(self):
+        self.fetch_data()
         if not "history" in self._data["tuStatus"][0]:
             return []
 

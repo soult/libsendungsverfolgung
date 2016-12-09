@@ -1,6 +1,9 @@
 import datetime
+import itertools
 import json
+import operator
 import random
+import re
 import requests
 import time
 
@@ -18,15 +21,25 @@ class Store(base.Store):
 class Parcel(base.Parcel):
 
     def __init__(self, tracking_number, *args, **kwargs):
-        tracking_number = str(tracking_number)
-        if len(tracking_number) != 14:
-            raise ValueError("Invalid tracking number")
-        self._get_data(tracking_number)
+        self._tracking_number = str(tracking_number)
+        self._data = None
 
-    def _get_data(self, tracking_number):
+    @classmethod
+    def from_barcode(cls, barcode):
+        if re.match(r"^\d{14}$", barcode):
+            check_digit = 10 - (sum(itertools.starmap(operator.mul, zip(itertools.cycle((3, 1)), map(int, barcode[:-1])))) % 10)
+            if check_digit == 10:
+                check_digit = 0
+            if check_digit == int(barcode[-1]):
+                return cls(barcode)
+
+    def fetch_data(self):
+        if self._data:
+            return
+
         params = {
             "callback": "jQuery1720%i_%i" % (random.randrange(10**15, 10**16), time.time() * 1000),
-            "id": tracking_number,
+            "id": self.tracking_number,
             "lng": "en",
             "token": API_KEY,
             "_": str(int(time.time() * 1000))
@@ -37,10 +50,11 @@ class Parcel(base.Parcel):
 
     @property
     def tracking_number(self):
-        return self._data["status"][0]["shipmentID"]
+        return self._tracking_number
 
     @property
     def events(self):
+        self.fetch_data()
         events = []
 
         for event in self._data["status"]:

@@ -158,14 +158,20 @@ class Store(base.Store):
 class Parcel(base.Parcel):
 
     def __init__(self, tracking_number, *args, **kwargs):
-        tracking_number = str(tracking_number)
-        if len(tracking_number) != 14:
-            raise ValueError("Invalid tracking number")
-        self._get_data(tracking_number)
+        self._tracking_number = str(tracking_number)
+        self._data = None
 
-    def _get_data(self, tracking_number):
+    @classmethod
+    def from_barcode(cls, barcode):
+        if barcode[0] == "%" and len(barcode) == 28:
+            return cls(barcode[8:22])
+
+    def fetch_data(self):
+        if self._data:
+            return
+
         params = {
-            "parcelNr": str(tracking_number),
+            "parcelNr": str(self.tracking_number),
             "locale": "en",
             "type": "1",
             "jsoncallback": "_jqjsp",
@@ -202,14 +208,16 @@ class Parcel(base.Parcel):
 
     @property
     def tracking_number(self):
-        return self._data["TrackingStatusJSON"]["shipmentInfo"]["parcelNumber"]
+        return self._tracking_number
 
     @property
     def product(self):
+        self.fetch_data()
         return self._data["TrackingStatusJSON"]["shipmentInfo"]["product"]
 
     @property
     def events(self):
+        self.fetch_data()
         events = []
 
         for event in self._data["TrackingStatusJSON"]["statusInfos"]:

@@ -1,5 +1,7 @@
 import datetime
 import html.parser
+import itertools
+import operator
 import re
 import requests
 import time
@@ -29,7 +31,6 @@ class Parcel(base.Parcel):
 
             self.events = []
             self._state = self.STATE_TABLE
-
 
         def handle_starttag(self, tag, attrs):
             if tag == "tbody" and self._state == self.STATE_TABLE:
@@ -95,13 +96,38 @@ class Parcel(base.Parcel):
 
 
     def __init__(self, tracking_number, *args, **kwargs):
-        tracking_number = str(tracking_number)
-        self._get_data(tracking_number)
+        self._tracking_number = str(tracking_number).upper()
+        self._data = None
 
-    def _get_data(self, tracking_number):
+    @classmethod
+    def from_barcode(cls, barcode):
+        if re.match(r"^\d{12}$", barcode):
+            check_digit = 10 - (sum(itertools.starmap(operator.mul, zip(itertools.cycle((4, 9)), map(int, barcode[:-1])))) % 10)
+            if check_digit == 10:
+                check_digit = 0
+            if check_digit == int(barcode[-1]):
+                return cls(barcode)
+
+        if re.match(r"^\d{20}$", barcode):
+            check_digit = 10 - (sum(itertools.starmap(operator.mul, zip(itertools.cycle((3, 1)), map(int, barcode[:-1])))) % 10)
+            if check_digit == 10:
+                check_digit = 0
+            if check_digit == int(barcode[-1]):
+                return cls(barcode)
+
+        match = re.match(r"^JJD(\d{13,24})$", barcode, re.IGNORECASE)
+        if match:
+            match_length = len(match.group(1))
+            if match_length in (13, 16, 17, 18, 20, 24):
+                return cls(barcode)
+
+    def fetch_data(self):
+        if self._data:
+            return
+
         params = {
             "lang": "en",
-            "idc": tracking_number
+            "idc": self.tracking_number
         }
         r = requests.get("https://nolp.dhl.de/nextt-online-public/set_identcodes.do", params=params)
 
@@ -109,13 +135,11 @@ class Parcel(base.Parcel):
 
     @property
     def tracking_number(self):
-        match = re.search(r"<th class=\"mm_sendungsnummer\">(.*?)</th>", self._data)
-        if not match:
-            raise Exception("Unable to locate tracking number")
-        return match.group(1)
+        return self._tracking_number
 
     @property
     def events(self):
+        self.fetch_data()
         match = re.search(r"<table class=\"mm_event_table\">(.*?)</table>", self._data, re.MULTILINE + re.DOTALL)
         if not match:
             raise Exception("Unable to locate event table")

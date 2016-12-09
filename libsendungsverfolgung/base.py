@@ -3,6 +3,12 @@ import collections
 import csv
 import os.path
 
+class LSVException(BaseException):
+    pass
+
+class UnknownParcelException(BaseException):
+    pass
+
 def load_countries():
     filename = os.path.join(os.path.dirname(__file__), "country-codes.csv")
     if not os.path.exists(filename):
