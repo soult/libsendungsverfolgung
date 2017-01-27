@@ -170,8 +170,41 @@ class Parcel(base.Parcel):
 
     @property
     def product(self):
-        self.fetch_data()
-        return self._get_info("PRODUCT")
+        """
+        Returns the product name
+
+        See chapter 3.2 in
+        https://gls-group.eu/DE/media/downloads/GLS_Uni-Box_TechDoku_2D_V0110_01-10-2012_DE-download-4424.pdf
+        """
+        if self._data:
+            return self._get_info("PRODUCT")
+
+
+        product_id = int(self.tracking_number[2:4])
+
+        if product_id in range(10, 68):
+            return "Business-Parcel"
+        elif product_id == 71:
+            return "Cash-Service (+DAC)"
+        elif product_id == 72:
+            return "Cash-Service+Exchange-Service"
+        elif product_id == 74:
+            return "DeliveryAtWork-Service"
+        elif product_id == 75:
+            return "Guaranteed 24-Service"
+        elif product_id == 76:
+            return "ShopReturn-Service"
+        elif product_id == 78:
+            return "Intercompany-Service"
+        elif product_id == 85:
+            return "Express-Parcel"
+        elif product_id == 87:
+            return "Exchange-Service Hintransport"
+        elif product_id == 89:
+            return "Pick&Return/Ship"
+        else:
+            # Not explicitly mentiond in the docs, but apparently just a regular parcel
+            return "Business-Parcel"
 
     @property
     def recipient(self):
