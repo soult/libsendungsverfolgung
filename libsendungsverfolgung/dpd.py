@@ -162,13 +162,18 @@ class Parcel(base.Parcel):
     COMPANY_SHORTNAME = "DPD"
 
     def __init__(self, tracking_number, *args, **kwargs):
-        self._tracking_number = str(tracking_number)
+        if len(tracking_number) == 28 and tracking_number[0] == "%":
+            self._barcode = tracking_number
+            self._tracking_number = self._barcode[8:22]
+        else:
+            self._barcode = None
+            self._tracking_number = str(tracking_number)
         self._data = None
 
     @classmethod
     def from_barcode(cls, barcode):
-        if barcode[0] == "%" and len(barcode) == 28:
-            return cls(barcode[8:22])
+        if len(barcode) == 28 and barcode[0] == "%":
+            return cls(barcode)
 
     def fetch_data(self):
         if self._data:
@@ -216,6 +221,62 @@ class Parcel(base.Parcel):
 
     @property
     def product(self):
+        """
+        Returns the product name.
+
+        ftp://ftp.dpd-business.at/Datenspezifikationen/DE/gbs_V3.3.1_module_statusreporting.pdf
+        chapter 9.3
+        """
+        # Only look up product if we don't have barcode or don't know the encoded product
+        if self._barcode:
+            product_id = self._barcode[22:25]
+            if product_id in ("101", "120"):
+                return "Normalpaket"
+            elif product_id in ("105", "124"):
+                return "Normalpaket, unfrei"
+            elif product_id in ("109", "128"):
+                return "Normalpaket, Nachnahme"
+            elif product_id in ("113", "132"):
+                return "Normalpaket, Austauschpaket"
+            elif product_id == "117":
+                return "Normalpaket, Mitnahmenpaket"
+            elif product_id == "118":
+                return "Normalpaket, Austauschpaket (retour)"
+            elif product_id in ("136", "146"):
+                return "Kleinpaket"
+            elif product_id in ("138", "148"):
+                return "Kleinpaket, unfrei"
+            elif product_id in ("140", "150"):
+                return "Kleinpaket, Nachnahme"
+            elif product_id in ("142", "152"):
+                return "Kleinpaket, Austauschpaket"
+            elif product_id == "144":
+                return "Kleinpaket, Mitnahmenpaket"
+            elif product_id == "145":
+                return "Kleinpaket, Austauschpaket (retour)"
+            elif product_id == "154":
+                return "Parcelletter"
+            elif product_id in ("155", "168"):
+                return "Garantiepaket"
+            elif product_id in ("158", "171"):
+                return "Garantiepaket, unfrei"
+            elif product_id in ("164", "177"):
+                return "Garantiepaket, Austauschpaket"
+            elif product_id == "166":
+                return "Garantiepaket, Austauschpaket (retour)"
+            elif product_id == "298":
+                return "Retoure an Versender"
+            elif product_id == "299":
+                return "Systemretoure international Express"
+            elif product_id == "300":
+                return "Systemretoure"
+            elif product_id == "327":
+                return "Normalpaket B2C"
+            elif product_id == "328":
+                return "Kleinpaket B2C"
+            elif product_id == "817":
+                return "Postübergabe"
+
         self.fetch_data()
         return self._data["TrackingStatusJSON"]["shipmentInfo"]["product"]
 
