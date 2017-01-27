@@ -192,7 +192,7 @@ class Parcel(base.Parcel):
 
         if "ErrorJSON" in self._data:
             if self._data["ErrorJSON"]["code"] == -8:
-                raise ValueError("Unknown tracking number")
+                raise base.UnknownParcelException()
             raise Exception("Unknown error")
 
     @property
