@@ -91,6 +91,10 @@ class Store(base.Store):
 
 class Parcel(base.Parcel):
 
+    COMPANY_IDENTIFIER = "gls"
+    COMPANY_NAME = "General Logistics Systems"
+    COMPANY_SHORTNAME = "GLS"
+
     def __init__(self, tracking_number, *args, **kwargs):
         tracking_number = str(tracking_number)
 

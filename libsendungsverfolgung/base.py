@@ -96,4 +96,4 @@ class Parcel(metaclass=abc.ABCMeta):
             product = self.product
         except NotImplementedError:
             product = "Parcel"
-        return "<%s %s>" % (product, self.tracking_number)
+        return "<%s %s: %s>" % (self.COMPANY_SHORTNAME, product, self.tracking_number)

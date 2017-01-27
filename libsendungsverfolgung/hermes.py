@@ -20,6 +20,10 @@ class Store(base.Store):
 
 class Parcel(base.Parcel):
 
+    COMPANY_IDENTIFIER = "de.hermes"
+    COMPANY_NAME = "Hermes"
+    COMPANY_SHORTNAME = COMPANY_NAME
+
     def __init__(self, tracking_number, *args, **kwargs):
         self._tracking_number = str(tracking_number)
         self._data = None

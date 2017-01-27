@@ -17,6 +17,10 @@ class Store(base.Store):
 
 class Parcel(base.Parcel):
 
+    COMPANY_IDENTIFIER = "dhl"
+    COMPANY_NAME = "Deutsche Post DHL"
+    COMPANY_SHORTNAME = "DHL"
+
     class EventsParser(html.parser.HTMLParser):
 
         STATE_TABLE = 2**0

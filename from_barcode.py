@@ -4,7 +4,7 @@ import libsendungsverfolgung as lsv
 import sys
 
 for line in sys.stdin:
-    parcel = lsv.from_barcode(line.strip("\r\n"))
+    parcel = lsv.from_barcode(line.strip())
     if parcel:
         print(parcel)
         try:

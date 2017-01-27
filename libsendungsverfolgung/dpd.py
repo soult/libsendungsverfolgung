@@ -157,6 +157,10 @@ class Store(base.Store):
 
 class Parcel(base.Parcel):
 
+    COMPANY_IDENTIFIER = "dpd"
+    COMPANY_NAME = "Dynamic Parcel Distribution"
+    COMPANY_SHORTNAME = "DPD"
+
     def __init__(self, tracking_number, *args, **kwargs):
         self._tracking_number = str(tracking_number)
         self._data = None

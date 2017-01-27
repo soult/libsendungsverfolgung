@@ -7,6 +7,10 @@ from .events import *
 
 class Parcel(base.Parcel):
 
+    COMPANY_IDENTIFIER = "at.post"
+    COMPANY_NAME = "Österreichische Post AG"
+    COMPANY_SHORTNAME = "Post.AT"
+
     def __init__(self, tracking_number, *args, **kwargs):
         self._tracking_number = str(tracking_number)
         self._data = None
