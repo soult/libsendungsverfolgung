@@ -102,10 +102,12 @@ class Parcel(base.Parcel):
         self._tracking_code = None
         if re.match("^[0-9]{11}$", tracking_number):
             self._tracking_number = tracking_number + str(self.check_digit(tracking_number))
+        elif re.match("^[0-9]{12}$", tracking_number):
+            self._tracking_number = tracking_number
         elif re.match("^[A-Z0-9]{8}$", tracking_number):
             self._tracking_code = tracking_number
         else:
-            self._tracking_number = tracking_number
+            self._tracking_code = tracking_number
         self._data = None
 
         super(Parcel, self).__init__(*args, **kwargs)
