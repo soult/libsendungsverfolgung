@@ -78,6 +78,13 @@ class SortEvent(LocationEvent):
 
     DESCRIPTION = "sort"
 
+class ManualSortEvent(SortEvent):
+    """
+    Parcel manual sort event"
+    """
+
+    DESCRIPTION = "sort (manual)"
+
 class InboundSortEvent(LocationEvent):
     """
     Inbound parcel sort event

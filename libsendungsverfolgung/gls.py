@@ -271,6 +271,11 @@ class Parcel(base.Parcel):
                     when=when,
                     location=location
                 )
+            elif descr == "The parcel has reached the GLS location and was sorted manually.":
+                pe = ManualSortEvent(
+                    when=when,
+                    location=location
+                )
             elif descr == "The parcel has left the GLS location.":
                 pe = OutboundSortEvent(
                     when=when,
