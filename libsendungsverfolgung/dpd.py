@@ -460,7 +460,11 @@ class Parcel(base.Parcel):
                             location=location,
                             recipient=None
                         ))
-
+            elif label == "Received by DPD from consignor.":
+                events.append(PickupEvent(
+                    when=when,
+                    location=location
+                ))
             else:
                 events.append(ParcelEvent(
                     when=when
