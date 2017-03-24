@@ -295,7 +295,6 @@ class Parcel(base.Parcel):
             elif descr in (
                 "The parcel has been delivered at the GLS ParcelShop (see above).",
                 "The parcel has been delivered at the GLS ParcelShop (see parcel information).",
-                "The parcel has reached the GLS ParcelShop."
             ):
                 if "parcelShop" in self._data["tuStatus"][0]:
                     store = Store.from_id(self._data["tuStatus"][0]["parcelShop"].get("psID"))
