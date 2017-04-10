@@ -12,9 +12,10 @@ class Location(base.Location):
 
     def __init__(self, city):
         match = re.match(r"^(.+) \(([A-Z]{2})\)$", city)
-        if not match:
-            raise ValueError("Invalid location: %s" % city)
-        super(Location, self).__init__(city=match.group(1), country_code=match.group(2))
+        if match:
+            super(Location, self).__init__(city=match.group(1), country_code=match.group(2))
+        else:
+            super(Location, self).__init__(city=city)
 
 class Store(base.Store):
 
@@ -293,7 +294,7 @@ class Parcel(base.Parcel):
             try:
                 location = Location(event["city"])
             except ValueError:
-                pass
+                location = None
 
             if len(event["contents"]) == 0:
                 continue
