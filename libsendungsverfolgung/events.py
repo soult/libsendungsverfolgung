@@ -71,6 +71,15 @@ class LocationEvent(ParcelEvent):
         else:
             return "%s, %s" % (self.when, self.location)
 
+class ParcelLabelPrintedEvent(LocationEvent):
+    """
+    Parcel label has been printed
+
+    The parcel label, usually for a pickup order, has been printed.
+    """
+
+    DESCRIPTION = "parcel label printed"
+
 class SortEvent(LocationEvent):
     """
     Parcel sort event

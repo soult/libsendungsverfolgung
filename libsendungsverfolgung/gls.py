@@ -353,6 +353,16 @@ class Parcel(base.Parcel):
                 pe = CancelledEvent(
                     when=when
                 )
+            elif descr == "The parcel label for the pickup has been produced.":
+                pe = ParcelLabelPrintedEvent(
+                    when=when,
+                    location=location
+                )
+            elif descr == "The parcel has been picked up by GLS.":
+                pe = PickupEvent(
+                    when=when,
+                    location=location
+                )
             else:
                 pe = ParcelEvent(
                     when=when
