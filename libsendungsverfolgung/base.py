@@ -91,6 +91,18 @@ class Parcel(metaclass=abc.ABCMeta):
     def recipient(self):
         raise NotImplementedError()
 
+    @property
+    def is_cash_on_delivery(self):
+        raise NotImplementedError()
+
+    @property
+    def is_courier_pickup(self):
+        raise NotImplementedError()
+
+    @property
+    def is_parcelshop_return(self):
+        raise NotImplementedError()
+
     def __str__(self):
         try:
             product = self.product

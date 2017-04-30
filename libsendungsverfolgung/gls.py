@@ -209,6 +209,21 @@ class Parcel(base.Parcel):
             return "Business-Parcel"
 
     @property
+    def is_cash_on_delivery(self):
+        product_id = int(self.tracking_number[2:4])
+        return product_id in (71, 72)
+
+    @property
+    def is_courier_pickup(self):
+        product_id = int(self.tracking_number[2:4])
+        return product_id == 89
+
+    @property
+    def is_parcelshop_return(self):
+        product_id = int(self.tracking_number[2:4])
+        return product_id == 76
+
+    @property
     def recipient(self):
         self.fetch_data()
         if "signature" in self._data["tuStatus"][0]:
