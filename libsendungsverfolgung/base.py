@@ -63,8 +63,10 @@ class Location(object):
                 return "%s, %s" % (self.city, self.country.alpha2)
             else:
                 return self.city
-        else:
+        elif self.country:
             return self.country.alpha2
+        else:
+            return "n/a"
 
 class Store(Location):
 
