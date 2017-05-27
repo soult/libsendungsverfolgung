@@ -69,7 +69,8 @@ class Store(base.Store):
         }
         r = requests.get(
             "https://customlocation.api.here.com/v1/search/attribute",
-            params=params)
+            params=params,
+            timeout=base.TIMEOUT)
         data = r.json()
         if len(data.get("locations", [])) != 1:
             return None
@@ -136,7 +137,8 @@ class Parcel(base.Parcel):
         }
         r = requests.get(
             "https://gls-group.eu/app/service/open/rest/EU/en/rstt001",
-            params=params)
+            params=params,
+            timeout=base.TIMEOUT)
 
         if r.status_code == 404:
             raise base.UnknownParcelException()

@@ -3,6 +3,8 @@ import collections
 import csv
 import os.path
 
+TIMEOUT = 10
+
 class LSVException(BaseException):
     pass
 

@@ -187,7 +187,7 @@ class Parcel(base.Parcel):
             "jsoncallback": "_jqjsp",
             "_%i" % int(time.time() * 1000): "",
         }
-        r = requests.get("https://tracking.dpd.de/cgi-bin/simpleTracking.cgi", params=params, verify=False)
+        r = requests.get("https://tracking.dpd.de/cgi-bin/simpleTracking.cgi", params=params, verify=False, timeout=base.TIMEOUT)
 
         self._data = json.loads(r.text[7:-1])
 
@@ -208,7 +208,7 @@ class Parcel(base.Parcel):
             "locale": "en",
             "typ": "2",
         }
-        r = requests.get("https://tracking.dpd.de/cgi-bin/delistrack", params=params, verify=False)
+        r = requests.get("https://tracking.dpd.de/cgi-bin/delistrack", params=params, verify=False, timeout=base.TIMEOUT)
         match = re.search(r"<br>Delivered to: (.+?)&nbsp;</td>", r.text)
         if not match:
             return None
