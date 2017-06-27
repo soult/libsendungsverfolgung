@@ -1,6 +1,7 @@
 import datetime
 import decimal
 import itertools
+import json
 import operator
 import re
 import requests
@@ -18,7 +19,9 @@ class Store(base.Store):
 
     DAYS_OF_WEEK = ("Mo", "Tu", "We", "Th", "Fr", "Sa", "Su")
 
-    NOKIA_APP_ID = "s0Ej52VXrLa6AUJEenti"
+    HERE_APP_ID = "s0Ej52VXrLa6AUJEenti"
+    HERE_APP_CODE = "mZr-2hFt2fPzaqrCxN0MuA"
+    HERE_LAYER_ID = "GLS_PSHOPS_PRD"
 
     @classmethod
     def _parse_opening_hours(cls, data):
@@ -61,32 +64,35 @@ class Store(base.Store):
     @classmethod
     def from_id(cls, store_id):
         params = {
-            "appId": cls.NOKIA_APP_ID,
-            "layerId": "48",
-            "query": "[like]/name3/%s" % store_id,
-            "rangeQuery": "",
+            "app_id": cls.HERE_APP_ID,
+            "app_code": cls.HERE_APP_CODE,
+            "layer_id": cls.HERE_LAYER_ID,
             "limit": "1",
+            "filter": "NAME3=='%s'" % store_id,
+            "callback": "Request.JSONP.request_map.request_0"
         }
         r = requests.get(
-            "https://customlocation.api.here.com/v1/search/attribute",
+            "https://cle.api.here.com/2/search/all.json",
             params=params,
             timeout=base.TIMEOUT)
-        data = r.json()
-        if len(data.get("locations", [])) != 1:
-            return None
-        data = data["locations"][0]
 
-        opening_hours = cls._parse_opening_hours(data["description"])
+        data = r.text[(len(params["callback"])+1):-1]
+        data = json.loads(data)
+        if len(data.get("geometries", [])) != 1:
+            return None
+        data = data["geometries"][0]["attributes"]
+
+        opening_hours = cls._parse_opening_hours(data["DESCRIPTION"])
 
         return cls(
-            name=data["name1"],
-            address=data["street"],
-            postcode=data["postalCode"],
-            city=data["city"],
-            country_code=data["country"],
-            phone=data.get("phone"),
-            fax=data.get("fax"),
-            email=data.get("email"),
+            name=data["NAME1"],
+            address=data["STREET"],
+            postcode=data["ZIP"],
+            city=data["CITY"],
+            country_code=data["COUNTRY"],
+            phone=data.get("PHONE"),
+            fax=data.get("FAX"),
+            email=data.get("EMAIL"),
             opening_hours=opening_hours
         )
 
