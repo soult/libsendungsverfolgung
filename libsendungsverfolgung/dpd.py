@@ -339,7 +339,21 @@ class Parcel(base.Parcel):
                             when=when,
                             location=location
                         ))
+                    if len(event["contents"]) > 2:
+                        label3 = event["contents"][2]["label"]
+                        if label3 == "(Return to sender)":
+                            events.append(ReturnEvent(
+                                when=when,
+                                location=location
+                            ))
             elif label == "Out for delivery.":
+                if len(event["contents"]) > 1:
+                    label3 = event["contents"][1]["label"]
+                    if label3 == "(Return to sender)":
+                        events.append(ReturnEvent(
+                            when=when,
+                            location=location
+                        ))
                 events.append(InDeliveryEvent(
                     when=when,
                     location=location
