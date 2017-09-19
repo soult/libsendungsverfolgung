@@ -175,6 +175,8 @@ class Parcel(base.Parcel):
     def from_barcode(cls, barcode):
         if len(barcode) == 28 and barcode[0] == "%":
             return cls(barcode)
+        elif len(barcode) == 27 and str.isdigit(barcode):
+            return cls("%" + barcode)
 
     def fetch_data(self):
         if self._data:
