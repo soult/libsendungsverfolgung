@@ -232,6 +232,11 @@ class Parcel(base.Parcel):
         return product_id == 76
 
     @property
+    def is_express(self):
+        product_id = int(self.tracking_number[2:4])
+        return product_id == 85
+
+    @property
     def recipient(self):
         self.fetch_data()
         if "signature" in self._data["tuStatus"][0]:

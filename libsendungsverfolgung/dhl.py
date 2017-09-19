@@ -142,6 +142,10 @@ class Parcel(base.Parcel):
         return self._tracking_number
 
     @property
+    def is_express(self):
+        return False # Regular DHL has no express shipping
+
+    @property
     def events(self):
         self.fetch_data()
         match = re.search(r"<table class=\"mm_event_table\">(.*?)</table>", self._data, re.MULTILINE + re.DOTALL)

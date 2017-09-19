@@ -107,6 +107,10 @@ class Parcel(metaclass=abc.ABCMeta):
     def is_parcelshop_return(self):
         raise NotImplementedError()
 
+    @property
+    def is_express(self):
+        raise NotImplementedError()
+
     def __str__(self):
         try:
             product = self.product

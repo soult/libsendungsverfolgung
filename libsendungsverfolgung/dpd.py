@@ -235,6 +235,8 @@ class Parcel(base.Parcel):
             product_id = self._barcode[22:25]
             if product_id in ("101", "120"):
                 return "Normalpaket"
+            elif product_id == "102":
+                return "Normalpaket, Gefahrgut"
             elif product_id in ("105", "124"):
                 return "Normalpaket, unfrei"
             elif product_id in ("109", "128"):
@@ -263,10 +265,18 @@ class Parcel(base.Parcel):
                 return "Garantiepaket"
             elif product_id in ("158", "171"):
                 return "Garantiepaket, unfrei"
+            elif product_id == "161":
+                return "Garantiepaket, Nachnahme"
             elif product_id in ("164", "177"):
                 return "Garantiepaket, Austauschpaket"
             elif product_id == "166":
                 return "Garantiepaket, Austauschpaket (retour)"
+            elif product_id == "179":
+                return "Express 10:00"
+            elif product_id == "225":
+                return "Express 12:00"
+            elif product_id == "228":
+                return "Express 12:00 Samstag"
             elif product_id == "298":
                 return "Retoure an Versender"
             elif product_id == "299":
@@ -277,11 +287,24 @@ class Parcel(base.Parcel):
                 return "Normalpaket B2C"
             elif product_id == "328":
                 return "Kleinpaket B2C"
+            elif product_id == "332":
+                return "Retoure"
+            elif product_id == "365":
+                return "Reifenlogistik"
+            elif product_id == "365":
+                return "Reifenlogistik B2C"
             elif product_id == "817":
                 return "Postübergabe"
 
         self.fetch_data()
         return self._data["TrackingStatusJSON"]["shipmentInfo"]["product"]
+
+    @property
+    def is_express(self):
+        if not self._barcode:
+            return None
+        product_id = self._barcode[22:25]
+        return product_id in ("179", "225", "228", "299")
 
     @property
     def events(self):
@@ -341,7 +364,21 @@ class Parcel(base.Parcel):
                             when=when,
                             location=location
                         ))
+                    if len(event["contents"]) > 2:
+                        label3 = event["contents"][2]["label"]
+                        if label3 == "(Return to sender)":
+                            events.append(ReturnEvent(
+                                when=when,
+                                location=location
+                            ))
             elif label == "Out for delivery.":
+                if len(event["contents"]) > 1:
+                    label3 = event["contents"][1]["label"]
+                    if label3 == "(Return to sender)":
+                        events.append(ReturnEvent(
+                            when=when,
+                            location=location
+                        ))
                 events.append(InDeliveryEvent(
                     when=when,
                     location=location
