@@ -10,8 +10,10 @@ if len(sys.argv) > 2:
         parcel = lsv.DPD.Parcel(sys.argv[1])
     elif sys.argv[2] == "dhl":
         parcel = lsv.DHL.Parcel(sys.argv[1])
-    else:
+    elif sys.argv[2] == "hermes":
         parcel = lsv.Hermes.Parcel(sys.argv[1])
+    else:
+        parcel = lsv.GLS.Parcel(sys.argv[1], sys.argv[2])
 else:
     parcel = lsv.GLS.Parcel(sys.argv[1])
 
