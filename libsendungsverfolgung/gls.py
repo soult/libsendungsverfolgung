@@ -102,7 +102,7 @@ class Parcel(base.Parcel):
     COMPANY_NAME = "General Logistics Systems"
     COMPANY_SHORTNAME = "GLS"
 
-    def __init__(self, tracking_number, *args, **kwargs):
+    def __init__(self, tracking_number, postcode=None, *args, **kwargs):
         tracking_number = str(tracking_number)
 
         self._tracking_number = None
@@ -116,6 +116,8 @@ class Parcel(base.Parcel):
         else:
             self._tracking_code = tracking_number
         self._data = None
+
+        self.postcode = postcode
 
         super(Parcel, self).__init__(*args, **kwargs)
 
@@ -256,6 +258,20 @@ class Parcel(base.Parcel):
                     references["parcel"] = info["value"]
         return references
 
+    def fetch_recipient(self, postcode):
+        params = {
+            "caller": "witt002",
+            "milis": str(int(time.time() * 1000)),
+        }
+        data = {
+            "postalCode": postcode
+        }
+        r = requests.post("https://gls-group.eu/app/service/open/rest/DE/de/rstt018/" + self.tracking_number[:11], params=params, json=data)
+
+        data = r.json()
+        if "signature" in data:
+            return data["signature"]["value"]
+
     @property
     def events(self):
         self.fetch_data()
@@ -270,16 +286,18 @@ class Parcel(base.Parcel):
             location = Location(event["address"])
 
             if descr == "The parcel was handed over to the consignee.":
+                recipient = self.fetch_recipient(self.postcode) if self.postcode else None
                 pe = DeliveryEvent(
                     when=when,
                     location=location,
-                    recipient=self.recipient
+                    recipient=recipient
                 )
             elif descr == "The parcel has been delivered at the neighbour´s (see parcel information).":
+                recipient = self.fetch_recipient(self.postcode) if self.postcode else None
                 pe = DeliveryNeighbourEvent(
                     when=when,
                     location=location,
-                    recipient=self.recipient
+                    recipient=recipient
                 )
             elif descr == "The parcel has been delivered at the consignee or deposited as requested.":
                 pe = DeliveryDropOffEvent(
