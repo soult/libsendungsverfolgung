@@ -27,5 +27,6 @@ for ev in parcel.events:
     if isinstance(ev, lsv.events.StoreDropoffEvent):
         try:
             print(ev.location.opening_hours)
+            print(ev.location.name)
         except:
             pass

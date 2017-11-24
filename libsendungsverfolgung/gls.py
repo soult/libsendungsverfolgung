@@ -50,6 +50,8 @@ class Store(base.Store):
 
             if part == "#--:-- - --:--":
                 result.pop()
+            elif part.startswith("Indleveringstid:"): # Pickup time in Dansih??? IDK
+                pass
             else:
                 match = re.match("^#(\d\d:\d\d) - (\d\d:\d\d)$", part)
                 if not match:
