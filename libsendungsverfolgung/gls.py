@@ -271,7 +271,7 @@ class Parcel(base.Parcel):
         r = requests.post("https://gls-group.eu/app/service/open/rest/DE/de/rstt018/" + self.tracking_number[:11], params=params, json=data)
 
         data = r.json()
-        if "signature" in data:
+        if "signature" in data and "value" in data["signature"]:
             return data["signature"]["value"]
 
     @property
