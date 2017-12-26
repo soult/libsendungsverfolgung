@@ -105,9 +105,9 @@ class Store(base.Store):
 
         def get_location(self):
             address_data = self._address.strip().split("\n")
-            address = "\n".join(address_data[:-1])
+            address = "\n".join(address_data)
 
-            match = re.match(r"^(.+?) (.+) \(([A-Z]{2})\)$", address_data[-1])
+            match = re.match(r"^(.+?)\s(.+)\s\(([A-Z]{2})\)$", address_data[-1])
             postcode, city, country_code = match.groups()
 
             return (address, postcode, city, country_code)
