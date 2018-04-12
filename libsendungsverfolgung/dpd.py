@@ -383,7 +383,7 @@ class Parcel(base.Parcel):
                     when=when,
                     location=location
                 ))
-            elif label == "Unfortunately we have not been able to deliver your parcel.":
+            elif label == "Unfortunately we could not deliver your parcel.":
                 if len(event["contents"]) > 1:
                     label2 = event["contents"][1]["label"]
                     if label2 == "Consignee not located, notification has been left.":
