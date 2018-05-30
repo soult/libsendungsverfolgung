@@ -1,9 +1,10 @@
 import datetime
+import dateutil.parser
+import decimal
 import html.parser
 import json
 import re
 import requests
-import time
 
 from . import base
 from .events import *
@@ -181,22 +182,14 @@ class Parcel(base.Parcel):
     def fetch_data(self):
         if self._data:
             return
+        r = requests.get("https://tracking.dpd.de/rest/plc/en_US/" + str(self.tracking_number), timeout=base.TIMEOUT)
 
-        params = {
-            "parcelNr": str(self.tracking_number),
-            "locale": "en",
-            "type": "1",
-            "jsoncallback": "_jqjsp",
-            "_%i" % int(time.time() * 1000): "",
-        }
-        r = requests.get("https://tracking.dpd.de/cgi-bin/simpleTracking.cgi", params=params, verify=False, timeout=base.TIMEOUT)
+        data = r.json()
+        assert "parcellifecycleResponse" in data
+        if data["parcellifecycleResponse"]["parcelLifeCycleData"] is None:
+            raise base.UnknownParcelException()
 
-        self._data = json.loads(r.text[7:-1])
-
-        if "ErrorJSON" in self._data:
-            if self._data["ErrorJSON"]["code"] == -8:
-                raise base.UnknownParcelException()
-            raise Exception("Unknown error")
+        self._data = data["parcellifecycleResponse"]["parcelLifeCycleData"]
 
     @property
     def recipient(self):
@@ -223,6 +216,13 @@ class Parcel(base.Parcel):
         return self._tracking_number
 
     @property
+    def product_id(self):
+        if self._barcode:
+            return self._barcode[22:25]
+        self.fetch_data()
+        return self._data["shipmentInfo"]["serviceCode"]
+
+    @property
     def product(self):
         """
         Returns the product name.
@@ -231,283 +231,140 @@ class Parcel(base.Parcel):
         chapter 9.3
         """
         # Only look up product if we don't have barcode or don't know the encoded product
-        if self._barcode:
-            product_id = self._barcode[22:25]
-            if product_id in ("101", "120"):
-                return "Normalpaket"
-            elif product_id == "102":
-                return "Normalpaket, Gefahrgut"
-            elif product_id in ("105", "124"):
-                return "Normalpaket, unfrei"
-            elif product_id in ("109", "128"):
-                return "Normalpaket, Nachnahme"
-            elif product_id in ("113", "132"):
-                return "Normalpaket, Austauschpaket"
-            elif product_id == "117":
-                return "Normalpaket, Mitnahmenpaket"
-            elif product_id == "118":
-                return "Normalpaket, Austauschpaket (retour)"
-            elif product_id in ("136", "146"):
-                return "Kleinpaket"
-            elif product_id in ("138", "148"):
-                return "Kleinpaket, unfrei"
-            elif product_id in ("140", "150"):
-                return "Kleinpaket, Nachnahme"
-            elif product_id in ("142", "152"):
-                return "Kleinpaket, Austauschpaket"
-            elif product_id == "144":
-                return "Kleinpaket, Mitnahmenpaket"
-            elif product_id == "145":
-                return "Kleinpaket, Austauschpaket (retour)"
-            elif product_id == "154":
-                return "Parcelletter"
-            elif product_id in ("155", "168"):
-                return "Garantiepaket"
-            elif product_id in ("158", "171"):
-                return "Garantiepaket, unfrei"
-            elif product_id == "161":
-                return "Garantiepaket, Nachnahme"
-            elif product_id in ("164", "177"):
-                return "Garantiepaket, Austauschpaket"
-            elif product_id == "166":
-                return "Garantiepaket, Austauschpaket (retour)"
-            elif product_id == "179":
-                return "Express 10:00"
-            elif product_id == "225":
-                return "Express 12:00"
-            elif product_id == "228":
-                return "Express 12:00 Samstag"
-            elif product_id == "298":
-                return "Retoure an Versender"
-            elif product_id == "299":
-                return "Systemretoure international Express"
-            elif product_id == "300":
-                return "Systemretoure"
-            elif product_id == "327":
-                return "Normalpaket B2C"
-            elif product_id == "328":
-                return "Kleinpaket B2C"
-            elif product_id == "332":
-                return "Retoure"
-            elif product_id == "365":
-                return "Reifenlogistik"
-            elif product_id == "365":
-                return "Reifenlogistik B2C"
-            elif product_id == "817":
-                return "Postübergabe"
+        if self.product_id in ("101", "120"):
+            return "Normalpaket"
+        elif self.product_id == "102":
+            return "Normalpaket, Gefahrgut"
+        elif self.product_id in ("105", "124"):
+            return "Normalpaket, unfrei"
+        elif self.product_id in ("109", "128"):
+            return "Normalpaket, Nachnahme"
+        elif self.product_id in ("113", "132"):
+            return "Normalpaket, Austauschpaket"
+        elif self.product_id == "117":
+            return "Normalpaket, Mitnahmenpaket"
+        elif self.product_id == "118":
+            return "Normalpaket, Austauschpaket (retour)"
+        elif self.product_id in ("136", "146"):
+            return "Kleinpaket"
+        elif self.product_id in ("138", "148"):
+            return "Kleinpaket, unfrei"
+        elif self.product_id in ("140", "150"):
+            return "Kleinpaket, Nachnahme"
+        elif self.product_id in ("142", "152"):
+            return "Kleinpaket, Austauschpaket"
+        elif self.product_id == "144":
+            return "Kleinpaket, Mitnahmenpaket"
+        elif self.product_id == "145":
+            return "Kleinpaket, Austauschpaket (retour)"
+        elif self.product_id == "154":
+            return "Parcelletter"
+        elif self.product_id in ("155", "168"):
+            return "Garantiepaket"
+        elif self.product_id in ("158", "171"):
+            return "Garantiepaket, unfrei"
+        elif self.product_id == "161":
+            return "Garantiepaket, Nachnahme"
+        elif self.product_id in ("164", "177"):
+            return "Garantiepaket, Austauschpaket"
+        elif self.product_id == "166":
+            return "Garantiepaket, Austauschpaket (retour)"
+        elif self.product_id == "179":
+            return "Express 10:00"
+        elif self.product_id == "225":
+            return "Express 12:00"
+        elif self.product_id == "228":
+            return "Express 12:00 Samstag"
+        elif self.product_id == "298":
+            return "Retoure an Versender"
+        elif self.product_id == "299":
+            return "Systemretoure international Express"
+        elif self.product_id == "300":
+            return "Systemretoure"
+        elif self.product_id == "327":
+            return "Normalpaket B2C"
+        elif self.product_id == "328":
+            return "Kleinpaket B2C"
+        elif self.product_id == "332":
+            return "Retoure"
+        elif self.product_id == "365":
+            return "Reifenlogistik"
+        elif self.product_id == "365":
+            return "Reifenlogistik B2C"
+        elif self.product_id == "817":
+            return "Postübergabe"
 
         self.fetch_data()
-        return self._data["TrackingStatusJSON"]["shipmentInfo"]["product"]
+        return self._data["shipmentInfo"]["productName"]
+
+    @property
+    def weight(self):
+        self.fetch_data()
+        for event in self._data["scanInfo"]["scan"]:
+            if event["scanData"]["parcelMeasurements"]:
+                measurements = event["scanData"]["parcelMeasurements"]
+                if measurements["weightGram"]:
+                    return decimal.Decimal(measurements["weightGram"]) / decimal.Decimal(1000)
 
     @property
     def is_express(self):
-        if not self._barcode:
-            return None
-        product_id = self._barcode[22:25]
-        return product_id in ("179", "225", "228", "299")
+        return self.product_id in ("179", "225", "228", "299")
 
     @property
     def events(self):
         self.fetch_data()
         events = []
 
-        for event in self._data["TrackingStatusJSON"]["statusInfos"]:
-            event_time = event["time"]
-            if event_time == "-":
-                event_time = "23:59 "
-            when = datetime.datetime.strptime(event["date"] + event_time, "%d-%m-%Y%H:%M ")
+        for event in self._data["scanInfo"]["scan"]:
+            when = dateutil.parser.isoparse(event["date"])
             try:
-                location = Location(event["city"])
+                location = Location(event["scanData"]["location"])
             except ValueError:
                 location = None
 
-            if len(event["contents"]) == 0:
-                continue
-
-            label = event["contents"][0]["label"]
-
-            if label in (
-                "Order information has been transmitted to DPD.",
-                "The data of your delivery specifications has been transmitted.",
-            ):
-                events.append(DataReceivedEvent(
-                    when=when
-                ))
-            elif label == "Parcel handed to Pickup parcelshop by consignor.":
-                events.append(PostedEvent(
+            code = event["scanData"]["scanType"]["code"]
+            if code == "02":
+                events.append((SortEvent(
                     when=when,
-                    location=location
-                ))
-            elif label == "Pick-up from the Pickup parcelshop by DPD driver":
-                for content in event["contents"][1:]:
-                    if content["contentType"] == "modal":
-                        location = Store(content["label"], content["content"])
-                        events.append(StorePickupEvent(
-                            when=when,
-                            location=location
-                        ))
-                        break
-                else:
-                    events.append(StorePickupEvent(
-                        when=when,
-                        location=location
-                    ))
-            elif label in("In transit.", "At parcel delivery centre."):
-                events.append(SortEvent(
+                    location=location,
+                )))
+            elif code == "03":
+                events.append(InDeliveryEvent(
                     when=when,
-                    location=location
+                    location=location,
                 ))
-                if len(event["contents"]) > 1:
-                    label2 = event["contents"][1]["label"]
-                    if label2 == "Consignee address not correct.":
-                        events.append(WrongAddressEvent(
-                            when=when,
-                            location=location
-                        ))
-                    if len(event["contents"]) > 2:
-                        label3 = event["contents"][2]["label"]
-                        if label3 == "(Return to sender)":
-                            events.append(ReturnEvent(
+            elif code == "05":
+                events.append(InboundSortEvent(
+                    when=when,
+                    location=location,
+                ))
+            elif code == "13":
+                special_delivery = False
+                if event["scanData"]["additionalCodes"]:
+                    for additional_code in event["scanData"]["additionalCodes"]:
+                        print(event["scanData"]["additionalCodes"])
+                        if additional_code["code"] == "069":
+                            events.append(DeliveryDropOffEvent(
                                 when=when,
                                 location=location
                             ))
-            elif label == "Out for delivery.":
-                if len(event["contents"]) > 1:
-                    label3 = event["contents"][1]["label"]
-                    if label3 == "(Return to sender)":
-                        events.append(ReturnEvent(
-                            when=when,
-                            location=location
-                        ))
-                events.append(InDeliveryEvent(
-                    when=when,
-                    location=location
-                ))
-            elif label == "Unfortunately we could not deliver your parcel.":
-                if len(event["contents"]) > 1:
-                    label2 = event["contents"][1]["label"]
-                    if label2 == "Consignee not located, notification has been left.":
-                        events.append(RecipientUnavailableEvent(
-                            when=when,
-                            location=location
-                        ))
-                        events.append(RecipientNotificationEvent(
-                            "notification",
-                            when=when,
-                            location=location
-                        ))
-                    elif label2 == "Consignee address not correct.":
-                        events.append(WrongAddressEvent(
-                            when=when,
-                            location=location
-                        ))
-                    elif label2.startswith("Refusal to accept delivery"):
-                        events.append(DeliveryRefusedEvent(
-                            when=when,
-                            location=location
-                        ))
-                    else:
-                        events.append(FailedDeliveryEvent(
-                            when=when,
-                            location=location
-                        ))
-                else:
-                    events.append(FailedDeliveryEvent(
-                        when=when,
-                        location=location
-                    ))
-            elif label == "Back at parcel delivery centre after an unsuccessful delivery attempt.":
-                events.append(InboundSortEvent(
-                    when=when,
-                    location=location
-                ))
-            elif label == "We're sorry but your parcel couldn't be delivered as arranged.":
-                if len(event["contents"]) > 1:
-                    label2 = event["contents"][1]["label"]
-                    if label2 == "Return to consignor after unsuccessful delivery to third party.":
-                        events.append(ReturnEvent(
-                            when=when,
-                            location=location
-                        ))
-                    elif label2 == "Consignee address not correct.":
-                        events.append(WrongAddressEvent(
-                            when=when,
-                            location=location
-                        ))
-            elif label == "Delivered.":
-                if len(event["contents"]) > 1:
-                    label2 = event["contents"][1]["label"]
-                    if label2 in (
-                        "Delivery / general authorisation to deposit.",
-                        "Delivery / one-off authorisation to deposit.",
-                    ):
-                        events.append(DeliveryDropOffEvent(
-                            when=when,
-                            location=location
-                        ))
-                    else:
-                        events.append(DeliveryEvent(
-                            when=when,
-                            location=location,
-                            recipient=self.recipient
-                        ))
-                else:
+                            special_delivery = True
+                            break
+
+                if not special_delivery:
                     events.append(DeliveryEvent(
                         when=when,
                         location=location,
-                        recipient=self.recipient
+                        recipient=None,
                     ))
-            elif label == "Transfer to Pickup parcelshop by DPD driver.":
-                for content in event["contents"][1:]:
-                    if content["contentType"] == "modal":
-                        location = Store(content["label"], content["content"])
-                        events.append(StoreDropoffEvent(
-                            when=when,
-                            location=location
-                        ))
-                        break
-                else:
-                    events.append(StoreDropoffEvent(
-                        when=when,
-                        location=location
-                    ))
-            elif label == "Pick-up from the Pickup parcelshop by DPD driver":
-                events.append(StorePickupEvent(
-                    when=when,
-                    location=location,
-                ))
-            elif label == "Collected by consignee from Pickup parcelshop." or \
-                label == "Picked up from Pickup parcelshop by consignee.":
-                events.append(DeliveryEvent(
-                    when=when,
-                    location=location,
-                    recipient=None
-                ))
-            elif label == "Collected by consignee from Pickup parcelshop.":
-                if len(event["contents"]) > 1:
-                    label2 = event["contents"][1]["label"]
-                    if label2 in (
-                        "Delivery / general authorisation to deposit.",
-                        "Delivery / one-off authorisation to deposit.",
-                    ):
-                        events.append(DeliveryDropOffEvent(
-                            when=when,
-                            location=location
-                        ))
-                    else:
-                        events.append(DeliveryEvent(
-                            when=when,
-                            location=location,
-                            recipient=None
-                        ))
-            elif label == "Received by DPD from consignor.":
+            elif code == "15":
                 events.append(PickupEvent(
                     when=when,
-                    location=location
+                    location=location,
                 ))
-            else:
-                events.append(ParcelEvent(
-                    when=when
+            elif code == "18":
+                events.append(DataReceivedEvent(
+                    when=when,
                 ))
 
         return events
