@@ -18,7 +18,7 @@ URL = 'https://github.com/logistic-assistant-systems-og/libsendungsverfolgung'
 EMAIL = 'david@triendl.name'
 AUTHOR = 'David Triendl'
 REQUIRES_PYTHON = '>=3.4.0'
-VERSION = '0.1.0a7'
+VERSION = '0.1.0a8'
 
 # What packages are required for this module to be executed?
 REQUIRED = [
