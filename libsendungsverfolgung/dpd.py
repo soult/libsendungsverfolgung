@@ -323,7 +323,7 @@ class Parcel(base.Parcel):
                 location = None
 
             code = event["scanData"]["scanType"]["code"]
-            if code == "02":
+            if code in ("01", "02"):
                 events.append((SortEvent(
                     when=when,
                     location=location,
@@ -333,8 +333,18 @@ class Parcel(base.Parcel):
                     when=when,
                     location=location,
                 ))
+            elif code == "04":
+                events.append(InboundSortEvent(
+                    when=when,
+                    location=location,
+                ))
             elif code == "05":
                 events.append(InboundSortEvent(
+                    when=when,
+                    location=location,
+                ))
+            elif code == "10":
+                events.append(SortEvent(
                     when=when,
                     location=location,
                 ))
@@ -364,14 +374,33 @@ class Parcel(base.Parcel):
                         location=location,
                         recipient=None,
                     ))
+            elif code == "14":
+                events.append(RecipientUnavailableEvent(
+                    when=when,
+                    location=location,
+                ))
+                if event["scanData"]["additionalCodes"]:
+                    for additional_code in event["scanData"]["additionalCodes"]["additionalCode"]:
+                        if additional_code["code"] == "019":
+                            events.append(RecipientNotificationEvent(
+                                when=when,
+                                location=location,
+                                notification=additional_code["name"]
+                            ))
             elif code == "15":
                 events.append(PickupEvent(
                     when=when,
                     location=location,
                 ))
             elif code == "18":
-                events.append(DataReceivedEvent(
-                    when=when,
-                ))
+                info_container = event["scanData"]["infoContainer"]
+                if info_container["infocontainerType"] == "01":
+                    events.append(DataReceivedEvent(
+                        when=when,
+                    ))
+                elif info_container["infocontainerType"] == "02":
+                    events.append(RedirectEvent(
+                        when=when,
+                    ))
 
         return events
