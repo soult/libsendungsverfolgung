@@ -258,15 +258,7 @@ class Parcel(base.Parcel):
                 special_delivery = False
                 if event["scanData"]["additionalCodes"]:
                     for additional_code in event["scanData"]["additionalCodes"]["additionalCode"]:
-                        if additional_code["code"] == "068":
-                            events.append(DeliveryNeighbourEvent(
-                                when=when,
-                                location=location,
-                                recipient=None,
-                            ))
-                            special_delivery = True
-                            break
-                        elif additional_code["code"] == "069":
+                        if additional_code["code"] in ("068", "069"):
                             events.append(DeliveryDropOffEvent(
                                 when=when,
                                 location=location
