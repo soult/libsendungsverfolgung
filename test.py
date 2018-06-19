@@ -7,7 +7,10 @@ import libsendungsverfolgung as lsv
 
 if len(sys.argv) > 2:
     if sys.argv[2] == "d":
-        parcel = lsv.DPD.Parcel(sys.argv[1])
+        if len(sys.argv) > 3:
+            parcel = lsv.DPD.Parcel(sys.argv[1], sys.argv[3])
+        else:
+            parcel = lsv.DPD.Parcel(sys.argv[1])
     elif sys.argv[2] == "dhl":
         parcel = lsv.DHL.Parcel(sys.argv[1])
     elif sys.argv[2] == "hermes":

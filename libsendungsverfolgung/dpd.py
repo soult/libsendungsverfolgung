@@ -69,13 +69,22 @@ class Parcel(base.Parcel):
     COMPANY_NAME = "Dynamic Parcel Distribution"
     COMPANY_SHORTNAME = "DPD"
 
-    def __init__(self, tracking_number, *args, **kwargs):
+    POSTCODE_LENGTHS = {
+        40: 4,
+        276: 5,
+    }
+
+    def __init__(self, tracking_number, postcode=None, *args, **kwargs):
         if len(tracking_number) == 28 and tracking_number[0] == "%":
             self._barcode = tracking_number
             self._tracking_number = self._barcode[8:22]
+            country = int(tracking_number[-3:])
+            postcode_length = self.POSTCODE_LENGTHS.get(country, 7)
+            self._postcode = tracking_number[(8-postcode_length):8]
         else:
             self._barcode = None
             self._tracking_number = str(tracking_number)
+            self._postcode = postcode
         self._data = None
 
     @classmethod
@@ -88,7 +97,10 @@ class Parcel(base.Parcel):
     def fetch_data(self):
         if self._data:
             return
-        r = requests.get("https://tracking.dpd.de/rest/plc/en_US/" + str(self.tracking_number), timeout=base.TIMEOUT)
+        url = "https://tracking.dpd.de/rest/plc/en_US/" + str(self.tracking_number)
+        if self._postcode:
+            url += "/" + str(self._postcode)
+        r = requests.get(url, timeout=base.TIMEOUT)
 
         data = r.json()
         assert "parcellifecycleResponse" in data
@@ -255,6 +267,13 @@ class Parcel(base.Parcel):
                     location=location,
                 ))
             elif code == "13":
+                recipient = None
+                if "additionalProperties" in self._data["shipmentInfo"]:
+                    for property in self._data["shipmentInfo"]["additionalProperties"]:
+                        if property["key"] == "RECEIVER_NAME":
+                            recipient = property["value"]
+                            break
+
                 special_delivery = False
                 if event["scanData"]["additionalCodes"]:
                     for additional_code in event["scanData"]["additionalCodes"]["additionalCode"]:
@@ -270,7 +289,7 @@ class Parcel(base.Parcel):
                     events.append(DeliveryEvent(
                         when=when,
                         location=location,
-                        recipient=None,
+                        recipient=recipient,
                     ))
             elif code == "14":
                 events.append(RecipientUnavailableEvent(
