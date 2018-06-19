@@ -261,6 +261,15 @@ class Parcel(base.Parcel):
                     when=when,
                     location=location,
                 ))
+            elif code == "08":
+                if event["scanData"]["additionalCodes"]:
+                    for additional_code in event["scanData"]["additionalCodes"]["additionalCode"]:
+                        if additional_code["code"] == "011":
+                            events.append(WrongAddressEvent(
+                                when=when,
+                                location=location
+                            ))
+                            break
             elif code == "10":
                 events.append(SortEvent(
                     when=when,
