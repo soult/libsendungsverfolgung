@@ -252,7 +252,10 @@ class Parcel(base.Parcel):
         references = {}
         for info in self._data["tuStatus"][0]["references"]:
             if info["type"] == "GLSREF":
-                references["customer_id"] = info["value"]
+                if info["name"] == "Origin National Reference in Unicode":
+                    references["customer_id"] = info["value"]
+                elif info["name"] == "Reference number created via device: Smartphone.":
+                    references["paketshop_qr_uuid"] = info["value"]
             elif info["type"] == "CUSTREF":
                 if info["name"] == "Customer's own reference number":
                     references["shipment"] = info["value"]
