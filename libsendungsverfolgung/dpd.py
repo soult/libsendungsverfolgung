@@ -229,6 +229,10 @@ class Parcel(base.Parcel):
         return self.product_id in ("179", "225", "228", "299")
 
     @property
+    def is_cash_on_delivery(self):
+        return self.product_id in ("109", "113", "128", "132", "140", "142", "150", "152", "158", "161", "171")
+
+    @property
     def events(self):
         self.fetch_data()
         events = []
