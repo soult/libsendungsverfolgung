@@ -110,26 +110,6 @@ class Parcel(base.Parcel):
         self._data = data["parcellifecycleResponse"]["parcelLifeCycleData"]
 
     @property
-    def recipient(self):
-        """
-        DPD has this weird policy where you have to send the postal code to get
-        the recipient's name in the simpleTracking.cgi JSON format. But in
-        other HTML pages, you can find it without any restrictions.
-        """
-        params = {
-            "pknr": self.tracking_number,
-            "locale": "en",
-            "typ": "2",
-        }
-        r = requests.get("https://tracking.dpd.de/cgi-bin/delistrack", params=params, verify=False, timeout=base.TIMEOUT)
-        match = re.search(r"<br>Delivered to: (.+?)&nbsp;</td>", r.text)
-        if not match:
-            return None
-
-        hp = html.parser.HTMLParser()
-        return hp.unescape(match.group(1))
-
-    @property
     def tracking_number(self):
         return self._tracking_number
 
