@@ -142,6 +142,10 @@ class Parcel(base.Parcel):
         return self._tracking_number
 
     @property
+    def tracking_link(self):
+        return "https://nolp.dhl.de/nextt-online-public/en/search?piececode=" + self.tracking_number
+
+    @property
     def is_express(self):
         return False # Regular DHL has no express shipping
 

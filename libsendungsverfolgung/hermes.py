@@ -57,6 +57,10 @@ class Parcel(base.Parcel):
         return self._tracking_number
 
     @property
+    def tracking_link(self):
+        return "https://tracking.hermesworld.com/?TrackID=" + self.tracking_number
+
+    @property
     def events(self):
         self.fetch_data()
         events = []

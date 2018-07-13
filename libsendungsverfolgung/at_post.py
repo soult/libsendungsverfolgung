@@ -39,6 +39,10 @@ class Parcel(base.Parcel):
         return self._tracking_number
 
     @property
+    def tracking_link(self):
+        return "https://www.post.at/sendungsverfolgung.php/details?pnum1=" + self.tracking_number
+
+    @property
     def product(self):
         """
         Returns the product name.

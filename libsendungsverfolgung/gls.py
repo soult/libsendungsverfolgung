@@ -181,6 +181,9 @@ class Parcel(base.Parcel):
 
         return self._tracking_number
 
+    @property
+    def tracking_link(self):
+        return "https://gls-group.eu/EU/en/parcel-tracking?match=" + self.tracking_number
 
     @property
     def product(self):

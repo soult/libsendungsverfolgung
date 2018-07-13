@@ -22,6 +22,10 @@ else:
 
 print(parcel)
 try:
+    print(parcel.tracking_link)
+except NotImplementedError:
+    pass
+try:
     print(parcel.weight)
 except NotImplementedError:
     pass

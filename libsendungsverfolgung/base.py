@@ -84,6 +84,10 @@ class Parcel(metaclass=abc.ABCMeta):
         pass
 
     @property
+    def tracking_link(self):
+        raise NotImplementedError()
+
+    @property
     def product(self):
         raise NotImplementedError()
 

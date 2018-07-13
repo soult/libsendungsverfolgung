@@ -114,6 +114,10 @@ class Parcel(base.Parcel):
         return self._tracking_number
 
     @property
+    def tracking_link(self):
+        return "https://extranet.dpd.de/status/en_DE/parcel/" + self.tracking_number
+
+    @property
     def product_id(self):
         if self._barcode:
             return self._barcode[22:25]
