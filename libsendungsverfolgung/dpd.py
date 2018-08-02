@@ -51,6 +51,12 @@ class Store(base.Store):
                     day["openMorning"],
                     day["closeAfternoon"],
                 ))
+            elif day["openMorning"] == "00:00" and day["closeMorning"] == "00:00":
+                result.append("%s %s-%s" % (
+                    self.DAYS[day["weekdayNum"] - 1],
+                    day["openAfternoon"],
+                    day["closeAfternoon"],
+                ))
             else:
                 result.append("%s %s-%s, %s-%s" % (
                     self.DAYS[day["weekdayNum"] - 1],
