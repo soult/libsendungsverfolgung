@@ -34,8 +34,8 @@ class Store(base.Store):
             city=data["city"],
             country_code=data["country"],
             opening_hours=self._parse_opening_hourse(data["openingHours"]),
-            phone=data["contactPersonPhone"],
-            email=data["contactPersonEmail"],
+            phone=data.get("contactPersonPhone"),
+            email=data.get("contactPersonEmail"),
         )
 
     def _parse_opening_hourse(self, data):
