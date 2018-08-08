@@ -4,6 +4,7 @@ import csv
 import os.path
 
 __all__ = ["at_post", "base", "events", "dhl", "dpd", "gls", "hermes"]
+__version__ = "0.1.0a15"
 
 from . import *
 

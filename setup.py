@@ -11,6 +11,8 @@ from shutil import rmtree
 
 from setuptools import find_packages, setup, Command
 
+import libsendungsverfolgung
+
 # Package meta-data.
 NAME = 'libsendungsverfolgung'
 DESCRIPTION = 'Python3 library for tracking parcels shipped with various couriers.'
@@ -18,7 +20,7 @@ URL = 'https://github.com/logistic-assistant-systems-og/libsendungsverfolgung'
 EMAIL = 'david@triendl.name'
 AUTHOR = 'David Triendl'
 REQUIRES_PYTHON = '>=3.4.0'
-VERSION = '0.1.0a14'
+VERSION = libsendungsverfolgung.__version__
 
 # What packages are required for this module to be executed?
 REQUIRED = [
