@@ -280,57 +280,76 @@ class Parcel(base.Parcel):
         if "signature" in data and "value" in data["signature"]:
             return data["signature"]["value"]
 
+    def extract_paketshop_location(self):
+        if "parcelShop" in self._data["tuStatus"][0]:
+            return Store.from_id(self._data["tuStatus"][0]["parcelShop"].get("psID"))
+
     @property
     def events(self):
         self.fetch_data()
         if not "history" in self._data["tuStatus"][0]:
             return []
 
+        print(json.dumps(self._data, indent=4, sort_keys=True))
+
         events = []
 
-        for event in self._data["tuStatus"][0]["history"]:
+        for event in reversed(self._data["tuStatus"][0]["history"]):
             descr = event["evtDscr"]
             when = datetime.datetime.strptime(event["date"] + event["time"], "%Y-%m-%d%H:%M:%S")
             location = Location(event["address"])
 
-            if descr == "The parcel was handed over to the consignee.":
+            if descr == "The parcel has been delivered.":
                 recipient = self.fetch_recipient(self.postcode) if self.postcode else None
                 pe = DeliveryEvent(
                     when=when,
                     location=location,
                     recipient=recipient
                 )
-            elif descr == "The parcel has been delivered at the neighbour´s (see parcel information).":
+            elif descr == "The parcel has been delivered at the neighbour\u00b4s (see signature)":
                 recipient = self.fetch_recipient(self.postcode) if self.postcode else None
                 pe = DeliveryNeighbourEvent(
                     when=when,
                     location=location,
                     recipient=recipient
                 )
-            elif descr == "The parcel has been delivered at the consignee or deposited as requested.":
+            elif descr == "The parcel has been delivered / dropped off.":
                 pe = DeliveryDropOffEvent(
                     when=when,
                     location=location,
                 )
-            elif descr == "The parcel is in the GLS delivery vehicle to be delivered in the course of the day.":
+            elif descr == "The parcel is expected to be delivered during the day.":
                 pe = InDeliveryEvent(
                     when=when,
                     location=location
                 )
-            elif descr in (
-                "The parcel was handed over to GLS.",
-                "The parcel has reached the GLS location."
-            ):
+            elif descr == "The parcel has reached the ParcelShop.":
+                if len(events) <= 1:
+                    pe = PostedEvent(
+                        when=when,
+                        location=location
+                    )
+                else:
+                    pe = StoreDropoffEvent(
+                        when=when,
+                        location=self.extract_paketshop_location() or location
+                    )
+            elif descr == "The parcel was handed over to GLS.":
+                pe = InboundSortEvent(
+                    when=when,
+                    location=location
+                )
+            elif descr == "The parcel has reached the parcel center.":
                 pe = SortEvent(
                     when=when,
                     location=location
                 )
-            elif descr == "The parcel has reached the GLS location and was sorted manually.":
+            elif descr == "The parcel has reached the parcel center and was sorted manually.":
                 pe = ManualSortEvent(
                     when=when,
                     location=location
                 )
-            elif descr == "The parcel has left the GLS location.":
+            elif descr == "The parcel has left the parcel center.":
                 pe = OutboundSortEvent(
                     when=when,
                     location=location
@@ -346,19 +365,12 @@ class Parcel(base.Parcel):
                     when=when,
                     location=location
                 )
-            elif descr in (
-                "The parcel has been delivered at the GLS ParcelShop (see above).",
-                "The parcel has been delivered at the GLS ParcelShop (see parcel information).",
-            ):
-                if "parcelShop" in self._data["tuStatus"][0]:
-                    store = Store.from_id(self._data["tuStatus"][0]["parcelShop"].get("psID"))
-                    if store:
-                        location = store
+            elif descr == "The parcel has been delivered at the ParcelShop (see ParcelShop information).":
                 pe = StoreDropoffEvent(
                     when=when,
-                    location=location
+                    location=self.extract_paketshop_location() or location
                 )
-            elif descr == "The parcel data was entered into the GLS system; the parcel was not yet handed over to GLS.":
+            elif descr == "The parcel data was entered into the GLS IT system; the parcel was not yet handed over to GLS.":
                 pe = DataReceivedEvent(
                     when=when
                 )
@@ -424,7 +436,7 @@ class Parcel(base.Parcel):
 
             events.append(pe)
 
-        return list(reversed(events))
+        return events
 
     @staticmethod
     def check_digit(tracking_number):
