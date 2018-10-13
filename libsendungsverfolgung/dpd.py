@@ -206,15 +206,6 @@ class Parcel(base.Parcel):
         return self._data["shipmentInfo"]["productName"]
 
     @property
-    def weight(self):
-        self.fetch_data()
-        for event in self._data["scanInfo"]["scan"]:
-            if event["scanData"]["parcelMeasurements"]:
-                measurements = event["scanData"]["parcelMeasurements"]
-                if measurements["weightGram"]:
-                    return decimal.Decimal(measurements["weightGram"]) / decimal.Decimal(1000)
-
-    @property
     def is_express(self):
         return self.product_id in ("179", "225", "228", "299")
 
