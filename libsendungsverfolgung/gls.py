@@ -290,8 +290,6 @@ class Parcel(base.Parcel):
         if not "history" in self._data["tuStatus"][0]:
             return []
 
-        print(json.dumps(self._data, indent=4, sort_keys=True))
-
         events = []
 
         for event in reversed(self._data["tuStatus"][0]["history"]):
@@ -354,7 +352,8 @@ class Parcel(base.Parcel):
                     when=when,
                     location=location
                 )
-            elif descr == "The parcel could not be delivered as the consignee was absent.":
+            elif descr in ("The parcel could not be delivered as the consignee was absent.",
+                           "The parcel could not be delivered as the reception was closed."):
                 pe = RecipientUnavailableEvent(
                     when=when,
                     location=location
@@ -379,28 +378,30 @@ class Parcel(base.Parcel):
                 pe = RedirectEvent(
                     when=when
                 )
-            elif descr.startswith("The parcel is stored in the GLS warehouse.") or \
-                descr.startswith("The parcel is being stored in the GLS depot.") or \
-                descr.startswith("The parcel remains in the GLS depot."):
+            elif descr.startswith("The parcel is stored in the parcel center.") or \
+                descr.startswith("The parcel is stored in the final parcel center.") or \
+                descr == "The parcel is stored in the parcel center to be delivered at a new delivery date.":
                 pe = StoredEvent(
                     when=when,
                     location=location
                 )
-                if descr == "The parcel is being stored in the GLS depot. It could not be delivered as further address information is needed." or \
-                    descr == "The parcel is stored in the GLS warehouse. It cannot be delivered as further address information is needed." or \
-                    descr == "The parcel remains in the GLS depot. It cannot be delivered due to missing address data.":
+                if descr.endswith("It could not be delivered as further address information is needed.") or \
+                    descr.endswith("It cannot be delivered as further address information is needed."):
                     events.append(WrongAddressEvent(
+                        when=when,
+                        location=location,
+                    ))
+                elif descr.endswith("It could not be delivered as the reception was closed."):
+                    events.append(RecipientUnavailableEvent(
                         when=when,
                         location=location
                     ))
-            elif descr in (
-                "The parcel could not be delivered as further address information is needed."
-                ):
+            elif descr == "The parcel could not be delivered as further address information is needed.":
                 pe = WrongAddressEvent(
                     when=when,
                     location=location
                 )
-            elif descr == "The parcel has been refused.":
+            elif descr == "The parcel could not be delivered as the recipient refused acceptance.":
                 pe = DeliveryRefusedEvent(
                     when=when,
                     location=location
