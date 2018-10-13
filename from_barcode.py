@@ -13,7 +13,7 @@ for line in sys.stdin:
             pass
         try:
             events = parcel.events
-        except BaseException as e:
+        except Exception as e:
             print(e)
         else:
             for ev in events:

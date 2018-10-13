@@ -5,11 +5,14 @@ import os.path
 
 TIMEOUT = 10
 
-class LSVException(BaseException):
+
+class LSVException(Exception):
     pass
 
-class UnknownParcelException(BaseException):
+
+class UnknownParcelException(Exception):
     pass
+
 
 def load_countries():
     filename = os.path.join(os.path.dirname(__file__), "country-codes.csv")
@@ -30,6 +33,7 @@ def load_countries():
     return countries
 
 countries = load_countries()
+
 
 class Location(object):
 
