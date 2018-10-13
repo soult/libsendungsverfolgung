@@ -286,13 +286,15 @@ class Parcel(base.Parcel):
                         recipient=recipient,
                     ))
             elif code == "14":
-                events.append(RecipientUnavailableEvent(
-                    when=when,
-                    location=location,
-                ))
                 if event["scanData"]["additionalCodes"]:
                     for additional_code in event["scanData"]["additionalCodes"]["additionalCode"]:
-                        if additional_code["code"] == "019":
+                        if additional_code["code"] == "011":
+                            events.append(WrongAddressEvent(
+                                when=when,
+                                location=location
+                            ))
+                            break
+                        elif additional_code["code"] == "019":
                             events.append(RecipientNotificationEvent(
                                 when=when,
                                 location=location,
@@ -304,6 +306,11 @@ class Parcel(base.Parcel):
                                 location=location,
                                 notification="parcelshop delivery"
                             ))
+                    else:
+                        events.append(RecipientUnavailableEvent(
+                            when=when,
+                            location=location,
+                        ))
             elif code == "15":
                 events.append(PickupEvent(
                     when=when,
