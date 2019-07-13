@@ -291,6 +291,7 @@ class Parcel(base.Parcel):
             return []
 
         events = []
+        first_scan = None
 
         for event in reversed(self._data["tuStatus"][0]["history"]):
             descr = event["evtDscr"]
@@ -322,7 +323,7 @@ class Parcel(base.Parcel):
                     location=location
                 )
             elif descr == "The parcel has reached the ParcelShop.":
-                if len(events) <= 1:
+                if first_scan is None or first_scan == when.date():
                     pe = PostedEvent(
                         when=when,
                         location=location
@@ -435,6 +436,8 @@ class Parcel(base.Parcel):
                     when=when
                 )
 
+            if isinstance(pe, LocationEvent):
+                first_scan = pe.when.date()
             events.append(pe)
 
         return events
