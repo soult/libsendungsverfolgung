@@ -1,8 +1,4 @@
-import datetime
 import dateutil.parser
-import decimal
-import html.parser
-import json
 import re
 import requests
 
@@ -319,23 +315,29 @@ class Parcel(base.Parcel):
                     location=location,
                 ))
             elif code == "18":
-                info_container = event["scanData"]["infoContainer"]
-                if info_container["name"] == "IC_013301_SHIPMENT_DATA_TRANSMITTED":
+                scan_type = event["scanData"]["scanType"]["name"]
+                if scan_type == "ShipmentDataTransferred":
                     events.append(DataReceivedEvent(
                         when=when,
                     ))
-                elif info_container["name"] == "IC_014101_SENDER_GOODS_ISSUE":
-                    pass # huh?
-                elif info_container["name"] in ("IC_020301_MODIFIED_DELIVERY_INSTRUCTIONS", "IC_012802_PARCELSHOP_HANDOVER"):
-                    events.append(RedirectEvent(
-                        when=when,
-                    ))
-                elif info_container["name"] == "IC_012901_PARCELSHOP_PICKUP":
-                    events.append(DeliveryEvent(
-                        when=when,
-                        location=location,
-                        recipient=None,
-                    ))
+                else:
+                    info_container = event["scanData"]["infoContainer"]
+                    if info_container["name"] == "IC_013301_SHIPMENT_DATA_TRANSMITTED":
+                        events.append(DataReceivedEvent(
+                            when=when,
+                        ))
+                    elif info_container["name"] == "IC_014101_SENDER_GOODS_ISSUE":
+                        pass # huh?
+                    elif info_container["name"] in ("IC_020301_MODIFIED_DELIVERY_INSTRUCTIONS", "IC_012802_PARCELSHOP_HANDOVER"):
+                        events.append(RedirectEvent(
+                            when=when,
+                        ))
+                    elif info_container["name"] == "IC_012901_PARCELSHOP_PICKUP":
+                        events.append(DeliveryEvent(
+                            when=when,
+                            location=location,
+                            recipient=None,
+                        ))
             elif code == "23":
                 store_id = [x["value"] for x in event["links"][0]["queryParameters"] if x["key"] == "ParcelShopId"][0]
                 events.append(StoreDropoffEvent(
