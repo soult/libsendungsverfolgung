@@ -199,6 +199,8 @@ class Parcel(base.Parcel):
             return "Reifenlogistik"
         elif self.product_id == "365":
             return "Reifenlogistik B2C"
+        elif self.product_id == "384":
+            return "Next Day"
         elif self.product_id == "817":
             return "Postübergabe"
 
