@@ -267,7 +267,7 @@ class Parcel(base.Parcel):
                             break
 
                 special_delivery = False
-                if event["scanData"]["additionalCodes"]:
+                if event["scanData"].get("additionalCodes"):
                     for additional_code in event["scanData"]["additionalCodes"]["additionalCode"]:
                         if additional_code["code"] in ("068", "069"):
                             events.append(DeliveryDropOffEvent(
