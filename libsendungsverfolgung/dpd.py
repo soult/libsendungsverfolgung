@@ -224,27 +224,27 @@ class Parcel(base.Parcel):
                 location = None
 
             code = event["scanData"]["scanType"]["code"]
-            if code in ("01", "02"):
+            if code in ("1", "2"):
                 events.append((SortEvent(
                     when=when,
                     location=location,
                 )))
-            elif code == "03":
+            elif code == "3":
                 events.append(InDeliveryEvent(
                     when=when,
                     location=location,
                 ))
-            elif code == "04":
+            elif code == "4":
                 events.append(InboundSortEvent(
                     when=when,
                     location=location,
                 ))
-            elif code == "05":
+            elif code == "5":
                 events.append(InboundSortEvent(
                     when=when,
                     location=location,
                 ))
-            elif code == "08":
+            elif code == "8":
                 if event["scanData"]["additionalCodes"]:
                     for additional_code in event["scanData"]["additionalCodes"]["additionalCode"]:
                         if additional_code["code"] == "011":
