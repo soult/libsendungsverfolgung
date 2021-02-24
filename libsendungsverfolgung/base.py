@@ -74,6 +74,10 @@ class Location(object):
         else:
             return "n/a"
 
+    def __eq__(self, other):
+        return self.name == other.name and self.address == other.address and \
+                self.city == other.city and self.country == other.country
+
 class Store(Location):
 
     def __init__(self, *args, **kwargs):

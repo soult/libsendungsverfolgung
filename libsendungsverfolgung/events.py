@@ -71,6 +71,9 @@ class LocationEvent(ParcelEvent):
         else:
             return "%s, %s" % (self.when, self.location)
 
+    def __eq__(self, other):
+        return self.when == other.when and self.location == other.location
+
 class ParcelLabelPrintedEvent(LocationEvent):
     """
     Parcel label has been printed
