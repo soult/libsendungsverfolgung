@@ -320,24 +320,10 @@ class Parcel(base.Parcel):
                     events.append(DataReceivedEvent(
                         when=when,
                     ))
-                else:
-                    info_container = event["scanData"]["infoContainer"]
-                    if info_container["name"] == "IC_013301_SHIPMENT_DATA_TRANSMITTED":
-                        events.append(DataReceivedEvent(
-                            when=when,
-                        ))
-                    elif info_container["name"] == "IC_014101_SENDER_GOODS_ISSUE":
-                        pass # huh?
-                    elif info_container["name"] in ("IC_020301_MODIFIED_DELIVERY_INSTRUCTIONS", "IC_012802_PARCELSHOP_HANDOVER"):
-                        events.append(RedirectEvent(
-                            when=when,
-                        ))
-                    elif info_container["name"] == "IC_012901_PARCELSHOP_PICKUP":
-                        events.append(DeliveryEvent(
-                            when=when,
-                            location=location,
-                            recipient=None,
-                        ))
+                elif scan_type == "RedirectionConfirmationDocument":
+                    events.append(RedirectEvent(
+                        when=when,
+                    ))
             elif code == "23":
                 store_id = [x["value"] for x in event["links"][0]["queryParameters"] if x["key"] == "ParcelShopId"][0]
                 events.append(StoreDropoffEvent(
