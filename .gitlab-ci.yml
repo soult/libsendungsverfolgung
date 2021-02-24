@@ -1,0 +1,36 @@
+image: python:latest
+
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+
+cache:
+  paths:
+    - .cache/pip
+
+stages:
+  - test
+  - build
+
+lint:
+  stage: test
+  script:
+    - pip install flake8
+    - flake8
+  allow_failure: true
+
+test:
+  stage: test
+  variables:
+    PARENT_COMMIT_REF_NAME: $CI_COMMIT_REF_NAME
+    PARENT_COMMIT_SHA: $CI_COMMIT_SHA
+  trigger:
+    project: soult/libsendungsverfolgung-test
+    strategy: depend
+
+build:
+  stage: build
+  script:
+    - python setup.py sdist
+  artifacts:
+    paths:
+      - dist/
