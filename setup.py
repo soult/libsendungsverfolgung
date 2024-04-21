@@ -14,7 +14,7 @@ from setuptools import find_packages, setup, Command
 # Package meta-data.
 NAME = 'libsendungsverfolgung'
 DESCRIPTION = 'Python3 library for tracking parcels shipped with various couriers.'
-URL = 'https://github.com/logistic-assistant-systems-og/libsendungsverfolgung'
+URL = 'https://github.com/soult/libsendungsverfolgung'
 EMAIL = 'david@triendl.name'
 AUTHOR = 'David Triendl'
 REQUIRES_PYTHON = '>=3.4.0'
@@ -22,8 +22,8 @@ VERSION = None
 
 # What packages are required for this module to be executed?
 REQUIRED = [
-    "python-dateutil>=2.7.0"
-    "requests>=2.0.0"
+    "python-dateutil>=2.7.0",
+    "requests>=2.0.0",
 ]
 
 # The rest you shouldn't have to touch too much :)
